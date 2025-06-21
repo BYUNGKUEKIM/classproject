@@ -95,6 +95,11 @@ interface ProductInfo {
   note: string;
 }
 
+// ProductInfo에 shootingTypeId를 추가한 타입 정의
+interface SelectedProduct extends ProductInfo {
+  shootingTypeId?: string;
+}
+
 // --- 브라우저 스토리지 헬퍼 함수 ---
 const saveToStorage = (key: string, data: any) => {
   try {
@@ -146,7 +151,7 @@ function App() {
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
 
   // 고객 등록용 상품 선택 상태
-  const [selectedProducts, setSelectedProducts] = useState<ProductInfo[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   const [productSearch, setProductSearch] = useState('');
   const [showProductDropdown, setShowProductDropdown] = useState(false);
 
@@ -546,20 +551,28 @@ function App() {
   const handleAddCustomer = () => {
     const validNames = customerNames.map(n => n.trim()).filter(Boolean);
     if (validNames.length === 0 || newCustomer.phone === '') return;
-    const newCustomers: Customer[] = validNames.map(name => ({
-      id: Date.now() + Math.random(),
-      name,
-      phone: newCustomer.phone,
-      email: newCustomer.email,
-      notes: newCustomer.notes,
-      category: newCustomer.category,
-      paymentMethod: newCustomer.paymentMethod,
-      depositMethod: newCustomer.depositMethod,
-      totalCost: totalSelectedProductPrice,
-      deposit: parseInt(newCustomer.deposit) || 0,
-      lastVisit: new Date().toISOString().split('T')[0],
-      totalVisits: 1,
-    }));
+    const newCustomers: Customer[] = validNames.map(name => {
+      // shootingTypeId로 촬영종류명 찾기 (첫번째 상품 기준)
+      let category = '';
+      if (selectedProducts.length > 0 && selectedProducts[0].shootingTypeId) {
+        const found = shootingInfos.find(s => s.id.toString() === selectedProducts[0].shootingTypeId);
+        category = found ? found.name : '';
+      }
+      return {
+        id: Date.now() + Math.random(),
+        name,
+        phone: newCustomer.phone,
+        email: newCustomer.email,
+        notes: newCustomer.notes,
+        category,
+        paymentMethod: newCustomer.paymentMethod,
+        depositMethod: newCustomer.depositMethod,
+        totalCost: totalSelectedProductPrice,
+        deposit: parseInt(newCustomer.deposit) || 0,
+        lastVisit: new Date().toISOString().split('T')[0],
+        totalVisits: 1,
+      };
+    });
     setCustomers([...customers, ...newCustomers]);
     setNewCustomer({
       name: '',
@@ -722,7 +735,10 @@ function App() {
   // 고객 등록 폼 내 상품 자동완성 및 가격 합산
   const handleAddProductToCustomer = (product: ProductInfo) => {
     if (!selectedProducts.find((p) => p.id === product.id)) {
-      setSelectedProducts([...selectedProducts, product]);
+      setSelectedProducts([
+        ...selectedProducts,
+        { ...product, shootingTypeId: '' },
+      ]);
     }
     setProductSearch('');
     setShowProductDropdown(false);
@@ -1784,9 +1800,26 @@ function App() {
               {/* 선택된 상품 리스트 */}
               {selectedProducts.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedProducts.map((p) => (
-                    <div key={p.id} className="flex items-center bg-blue-50 rounded px-2 py-1 text-sm">
-                      <span>{p.name} <span className="text-blue-600">{Number(p.price).toLocaleString()}원</span></span>
+                  {selectedProducts.map((p, idx) => (
+                    <div key={p.id} className="flex items-center bg-blue-50 rounded px-2 py-1 text-sm gap-2">
+                      <span>
+                        {p.name} <span className="text-blue-600">{Number(p.price).toLocaleString()}원</span>
+                      </span>
+                      {/* 촬영종류 드롭다운 */}
+                      <select
+                        className="ml-2 border rounded px-1 py-0.5 text-xs"
+                        value={p.shootingTypeId || ''}
+                        onChange={e => {
+                          const updated = [...selectedProducts];
+                          updated[idx].shootingTypeId = e.target.value;
+                          setSelectedProducts(updated);
+                        }}
+                      >
+                        <option value="">촬영종류 선택</option>
+                        {shootingInfos.map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
                       <button
                         className="ml-1 text-red-500 hover:text-red-700"
                         onClick={() => handleRemoveProductFromCustomer(p.id)}
