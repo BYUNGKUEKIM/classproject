@@ -1457,21 +1457,7 @@ function App() {
   // 상품정보 메뉴 렌더링 시 탭 UI 추가
   const renderProductInfoTabs = () => (
     <div className="bg-white shadow rounded-lg p-6 max-w-2xl mx-auto">
-      <div className="flex gap-2 mb-4 border-b">
-        <button
-          className={`px-4 py-2 font-semibold ${productTab === 'product' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
-          onClick={() => setProductTab('product')}
-        >
-          상품정보
-        </button>
-        <button
-          className={`px-4 py-2 font-semibold ${productTab === 'shooting' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
-          onClick={() => setProductTab('shooting')}
-        >
-          촬영종류
-        </button>
-      </div>
-      {productTab === 'product' ? renderProductInfo() : renderShootingInfo()}
+      : renderShootingInfo()}
     </div>
   );
 
@@ -1948,66 +1934,6 @@ function App() {
             <div className="mt-4">
               <label className="block text-sm font-medium mb-1">촬영종류</label>
               <div className="relative">
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  placeholder="촬영종류를 입력하세요"
-                  value={shootingSearch}
-                  onChange={e => {
-                    setShootingSearch(e.target.value);
-                    setShowShootingDropdown(true);
-                  }}
-                  onFocus={() => setShowShootingDropdown(true)}
-                  autoComplete="off"
-                />
-                {showShootingDropdown && shootingSearch && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    {shootingInfos.filter(s => s.name.includes(shootingSearch)).length === 0 ? (
-                      <div className="p-3 text-gray-500 text-center">검색 결과가 없습니다.</div>
-                    ) : (
-                      shootingInfos
-                        .filter(s => s.name.includes(shootingSearch))
-                        .map(s => (
-                          <div
-                            key={s.id}
-                            className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                            onClick={() => {
-                              if (!selectedShootingInfos.find(sel => sel.id === s.id)) {
-                                setSelectedShootingInfos([...selectedShootingInfos, s]);
-                              }
-                              setShootingSearch('');
-                              setShowShootingDropdown(false);
-                            }}
-                          >
-                            <span className="font-medium">{s.name}</span>
-                            <span className="ml-2 text-green-600">{s.price ? Number(s.price).toLocaleString() + '원' : ''}</span>
-                            {s.note && <span className="ml-2 text-xs text-gray-400">({s.note})</span>}
-                          </div>
-                        ))
-                    )}
-                  </div>
-                )}
-              </div>
-              {/* 선택된 촬영정보 리스트 */}
-              {selectedShootingInfos.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedShootingInfos.map((s) => (
-                    <div key={s.id} className="flex items-center bg-green-50 rounded px-2 py-1 text-sm">
-                      <span>{s.name} <span className="text-green-600">{s.price ? Number(s.price).toLocaleString() + '원' : ''}</span></span>
-                      <button
-                        className="ml-1 text-red-500 hover:text-red-700"
-                        onClick={() => setSelectedShootingInfos(selectedShootingInfos.filter(sel => sel.id !== s.id))}
-                        type="button"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {/* 촬영종류 합계 */}
-              <div className="mt-2 text-right text-sm font-semibold text-green-700">
-                합계: {selectedShootingInfos.reduce((sum, s) => sum + Number(s.price || 0), 0).toLocaleString()}원
               </div>
             </div>
           </div>
