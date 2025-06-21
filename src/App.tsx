@@ -171,6 +171,9 @@ function App() {
   const [shootingSearch, setShootingSearch] = useState('');
   const [showShootingDropdown, setShowShootingDropdown] = useState(false);
 
+  // 상품정보/촬영종류 탭 상태
+  const [productTab, setProductTab] = useState<'product' | 'shooting'>('product');
+
   const initialCustomers: Customer[] = [
     {
       id: 1,
@@ -1416,6 +1419,27 @@ function App() {
     </div>
   );
 
+  // 상품정보 메뉴 렌더링 시 탭 UI 추가
+  const renderProductInfoTabs = () => (
+    <div className="bg-white shadow rounded-lg p-6 max-w-2xl mx-auto">
+      <div className="flex gap-2 mb-4 border-b">
+        <button
+          className={`px-4 py-2 font-semibold ${productTab === 'product' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          onClick={() => setProductTab('product')}
+        >
+          상품정보
+        </button>
+        <button
+          className={`px-4 py-2 font-semibold ${productTab === 'shooting' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          onClick={() => setProductTab('shooting')}
+        >
+          촬영종류
+        </button>
+      </div>
+      {productTab === 'product' ? renderProductInfo() : renderShootingInfo()}
+    </div>
+  );
+
   // 메인 콘텐츠 렌더링 함수
   const renderContent = () => {
     if (activeMenu === 'dashboard') {
@@ -1870,12 +1894,12 @@ function App() {
             </div>
             {/* 촬영정보 선택 */}
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-1">촬영정보</label>
+              <label className="block text-sm font-medium mb-1">촬영종류</label>
               <div className="relative">
                 <input
                   type="text"
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  placeholder="촬영정보를 입력하세요"
+                  placeholder="촬영종류를 입력하세요"
                   value={shootingSearch}
                   onChange={e => {
                     setShootingSearch(e.target.value);
@@ -3003,7 +3027,7 @@ function App() {
     }
 
     if (activeMenu === 'productInfo') {
-      return renderProductInfo();
+      return renderProductInfoTabs();
     }
 
     if (activeMenu === 'shootingInfo') {
