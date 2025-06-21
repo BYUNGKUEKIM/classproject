@@ -168,7 +168,7 @@ function App() {
   const [shootingInfos, setShootingInfos] = useState<{id: number, name: string, price: string, note: string}[]>(() => loadFromStorage('studioShootingInfos') || []);
 
   // 신규 고객 등록용 촬영정보 선택 상태
-  const [selectedShootingInfos, setSelectedShootingInfos] = useState<{id: number, name: string, note: string}[]>([]);
+  const [selectedShootingInfos, setSelectedShootingInfos] = useState<{id: number, name: string, price: string, note: string}[]>([]);
   const [shootingSearch, setShootingSearch] = useState('');
   const [showShootingDropdown, setShowShootingDropdown] = useState(false);
 
