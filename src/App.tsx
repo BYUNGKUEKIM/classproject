@@ -95,6 +95,14 @@ interface MonthlyData {
   cashPayments: number;
 }
 
+// 상품 가격 정보 상태
+interface ProductInfo {
+  id: number;
+  name: string;
+  price: string;
+  note: string;
+}
+
 // --- 브라우저 스토리지 헬퍼 함수 ---
 const saveToStorage = (key: string, data: any) => {
   try {
@@ -142,6 +150,16 @@ function App() {
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [smsMessage, setSmsMessage] = useState('');
   const [selectedCustomers, setSelectedCustomers] = useState<number[]>([]);
+  const [customerDetail, setCustomerDetail] = useState<Customer | null>(null);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+
+  // 고객 등록용 상품 선택 상태
+  const [selectedProducts, setSelectedProducts] = useState<ProductInfo[]>([]);
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+
+  // 고객 등록용 이름 배열 상태
+  const [customerNames, setCustomerNames] = useState<string[]>(['']);
 
   const initialCustomers: Customer[] = [
     {
@@ -262,6 +280,12 @@ function App() {
       ],
     },
     {
+      id: 'customerList',
+      name: '고객 리스트',
+      icon: Users,
+      subMenus: [],
+    },
+    {
       id: 'management',
       name: '회계관리 통계',
       icon: DollarSign,
@@ -291,6 +315,12 @@ function App() {
       name: 'SMS',
       icon: MessageSquare,
       subMenus: [{ id: 'send', name: 'SMS 발송' }],
+    },
+    {
+      id: 'productInfo',
+      name: '상품가격정보',
+      icon: CreditCard,
+      subMenus: [],
     },
   ];
 
@@ -481,35 +511,54 @@ function App() {
     return slots;
   };
 
+  // 고객명 입력란 추가/삭제/변경 함수
+  const handleAddCustomerName = () => setCustomerNames([...customerNames, '']);
+  const handleRemoveCustomerName = (idx: number) => setCustomerNames(customerNames.filter((_, i) => i !== idx));
+  const handleChangeCustomerName = (idx: number, value: string) => {
+    const updated = [...customerNames];
+    updated[idx] = value;
+    setCustomerNames(updated);
+  };
+
+  // 신규 고객 등록 시 이름 입력란 초기화
+  useEffect(() => {
+    setCustomerNames(['']);
+  }, [activeMenu]);
+
+  // handleAddCustomer 함수 수정: 여러 명 등록
   const handleAddCustomer = () => {
-    if (newCustomer.name && newCustomer.phone) {
-      const customer: Customer = {
-        id: Date.now(),
-        name: newCustomer.name,
-        phone: newCustomer.phone,
-        email: newCustomer.email,
-        notes: newCustomer.notes,
-        category: newCustomer.category,
-        paymentMethod: newCustomer.paymentMethod,
-        depositMethod: newCustomer.depositMethod,
-        totalCost: parseInt(newCustomer.totalCost) || 0,
-        deposit: parseInt(newCustomer.deposit) || 0,
-        lastVisit: new Date().toISOString().split('T')[0],
-        totalVisits: 1,
-      };
-      setCustomers([...customers, customer]);
-      setNewCustomer({
-        name: '',
-        phone: '',
-        email: '',
-        category: '반명함사진',
-        notes: '',
-        totalCost: '',
-        deposit: '',
-        paymentMethod: '카드',
-        depositMethod: '카드',
-      });
-    }
+    const validNames = customerNames.map(n => n.trim()).filter(Boolean);
+    if (validNames.length === 0 || newCustomer.phone === '') return;
+    const newCustomers: Customer[] = validNames.map(name => ({
+      id: Date.now() + Math.random(),
+      name,
+      phone: newCustomer.phone,
+      email: newCustomer.email,
+      notes: newCustomer.notes,
+      category: newCustomer.category,
+      paymentMethod: newCustomer.paymentMethod,
+      depositMethod: newCustomer.depositMethod,
+      totalCost: totalSelectedProductPrice,
+      deposit: parseInt(newCustomer.deposit) || 0,
+      lastVisit: new Date().toISOString().split('T')[0],
+      totalVisits: 1,
+    }));
+    setCustomers([...customers, ...newCustomers]);
+    setNewCustomer({
+      name: '',
+      phone: '',
+      email: '',
+      category: '반명함사진',
+      notes: '',
+      totalCost: '',
+      deposit: '',
+      paymentMethod: '카드',
+      depositMethod: '카드',
+    });
+    setCustomerNames(['']);
+    setSelectedProducts([]);
+    setProductSearch('');
+    setShowProductDropdown(false);
   };
 
   const handleAddAppointment = () => {
@@ -679,6 +728,26 @@ function App() {
 
     return days;
   };
+
+  // 고객 등록 폼 내 상품 자동완성 및 가격 합산
+  const handleAddProductToCustomer = (product: ProductInfo) => {
+    if (!selectedProducts.find((p) => p.id === product.id)) {
+      setSelectedProducts([...selectedProducts, product]);
+    }
+    setProductSearch('');
+    setShowProductDropdown(false);
+  };
+  const handleRemoveProductFromCustomer = (id: number) => {
+    setSelectedProducts(selectedProducts.filter((p) => p.id !== id));
+  };
+  const totalSelectedProductPrice = selectedProducts.reduce((sum, p) => sum + Number(p.price), 0);
+
+  // 신규 고객 등록 시 상품 선택 초기화
+  useEffect(() => {
+    setSelectedProducts([]);
+    setProductSearch('');
+    setShowProductDropdown(false);
+  }, [activeMenu]);
 
   // 로그인 페이지 컴포넌트
   const LoginPage = () => (
@@ -960,194 +1029,272 @@ function App() {
     </div>
   );
 
+  // 고객 상세 모달
+  const CustomerDetailModal = ({ customer, onClose }: { customer: Customer, onClose: () => void }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+        <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">✕</button>
+        <h2 className="text-xl font-bold mb-4">고객 정보</h2>
+        <div className="space-y-2">
+          <div><b>이름:</b> {customer.name}</div>
+          <div><b>전화번호:</b> {customer.phone}</div>
+          <div><b>이메일:</b> {customer.email}</div>
+          <div><b>카테고리:</b> {customer.category}</div>
+          <div><b>총 방문:</b> {customer.totalVisits}회</div>
+          <div><b>최근 방문일:</b> {customer.lastVisit}</div>
+          <div><b>메모:</b> {customer.notes}</div>
+          <div><b>총 비용:</b> {customer.totalCost.toLocaleString()}원</div>
+          <div><b>선금:</b> {customer.deposit.toLocaleString()}원</div>
+          <div><b>결제방법:</b> {customer.paymentMethod}</div>
+          <div><b>선금 결제방법:</b> {customer.depositMethod}</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // 고객 리스트 페이지
+  const renderCustomerList = () => {
+    // 검색 및 정렬
+    const filtered = customers
+      .filter(
+        (c) =>
+          c.name.includes(customerSearchTerm) ||
+          c.phone.includes(customerSearchTerm)
+      )
+      .sort((a, b) => b.lastVisit.localeCompare(a.lastVisit));
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">고객 리스트</h2>
+          <input
+            type="text"
+            placeholder="이름/전화번호 검색"
+            className="border px-3 py-2 rounded-md text-sm"
+            value={customerSearchTerm}
+            onChange={e => setCustomerSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">카테고리</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">최근 방문일</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filtered.map((customer) => (
+                <tr key={customer.id} className="hover:bg-blue-50 cursor-pointer" onClick={() => setCustomerDetail(customer)}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{customer.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.phone}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.lastVisit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {customerDetail && <CustomerDetailModal customer={customerDetail} onClose={() => setCustomerDetail(null)} />}
+      </div>
+    );
+  };
+
+  // 대시보드 검색 기능 및 최근 고객 10명 표시
+  const [dashboardSearch, setDashboardSearch] = useState('');
+  const dashboardFilteredCustomers = customers.filter(
+    (c) =>
+      c.name.includes(dashboardSearch) ||
+      c.phone.includes(dashboardSearch)
+  );
+  const recentCustomers = [...customers]
+    .sort((a, b) => b.lastVisit.localeCompare(a.lastVisit))
+    .slice(0, 10);
+
+  // 상품가격정보 페이지
+  const renderProductInfo = () => (
+    <div className="bg-white shadow rounded-lg p-6 max-w-2xl mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">상품 가격 정보</h2>
+        <button
+          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-lg"
+          onClick={() =>
+            setNewProductRows([
+              ...newProductRows,
+              { id: Date.now(), name: '', price: '', note: '' },
+            ])
+          }
+        >
+          +
+        </button>
+      </div>
+      {/* 신규 상품 입력 행 */}
+      {newProductRows.map((row, idx) => (
+        <div key={row.id} className="flex gap-2 mb-2 items-center">
+          <input
+            type="text"
+            placeholder="상품명"
+            className="border px-2 py-1 rounded w-1/3"
+            value={row.name}
+            onChange={e => {
+              const updated = [...newProductRows];
+              updated[idx].name = e.target.value;
+              setNewProductRows(updated);
+            }}
+          />
+          <input
+            type="number"
+            placeholder="가격"
+            className="border px-2 py-1 rounded w-1/4"
+            value={row.price}
+            onChange={e => {
+              const updated = [...newProductRows];
+              updated[idx].price = e.target.value;
+              setNewProductRows(updated);
+            }}
+          />
+          <input
+            type="text"
+            placeholder="비고"
+            className="border px-2 py-1 rounded w-1/3"
+            value={row.note}
+            onChange={e => {
+              const updated = [...newProductRows];
+              updated[idx].note = e.target.value;
+              setNewProductRows(updated);
+            }}
+          />
+          <button
+            className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 text-sm"
+            onClick={() => {
+              if (!row.name || !row.price) return;
+              setProductInfos([
+                ...productInfos,
+                { ...row, id: Date.now() },
+              ]);
+              setNewProductRows(newProductRows.filter((_, i) => i !== idx));
+            }}
+          >
+            저장
+          </button>
+        </div>
+      ))}
+      {/* 저장된 상품 리스트 */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-2">상품 목록</h3>
+        {productInfos.length === 0 ? (
+          <div className="text-gray-500">등록된 상품이 없습니다.</div>
+        ) : (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">상품명</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">가격</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">비고</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {productInfos.map((p) => (
+                <tr key={p.id}>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{p.name}</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{Number(p.price).toLocaleString()}원</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{p.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+
   // 메인 콘텐츠 렌더링 함수
   const renderContent = () => {
     if (activeMenu === 'dashboard') {
-      const todayCustomers = customers.filter(
-        (c) => c.lastVisit === new Date().toISOString().split('T')[0]
-      );
-      const todayAppointments = getTodayAppointments();
-      const monthlyData = getMonthlyData();
-      const currentMonth = new Date().getMonth();
-      const thisMonthData = monthlyData[currentMonth];
-
       return (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-semibold text-gray-900">대시보드</h2>
             <div className="text-sm text-gray-500">실시간 스튜디오 현황</div>
           </div>
-
-          {/* 오늘 요약 */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 mr-4" />
-                <div>
-                  <p className="text-blue-100">오늘 방문</p>
-                  <p className="text-2xl font-bold">
-                    {todayCustomers.length}명
-                  </p>
-                </div>
-              </div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="고객 이름/전화번호 검색..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={dashboardSearch}
+                onChange={e => setDashboardSearch(e.target.value)}
+              />
             </div>
-
-            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <DollarSign className="h-8 w-8 mr-4" />
-                <div>
-                  <p className="text-green-100">오늘 매출</p>
-                  <p className="text-2xl font-bold">
-                    {getDailySales().toLocaleString()}원
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 mr-4" />
-                <div>
-                  <p className="text-purple-100">오늘 예약</p>
-                  <p className="text-2xl font-bold">
-                    {todayAppointments.length}건
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <Camera className="h-8 w-8 mr-4" />
-                <div>
-                  <p className="text-orange-100">이번 달</p>
-                  <p className="text-2xl font-bold">
-                    {thisMonthData.customers}명
-                  </p>
-                </div>
-              </div>
-            </div>
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+              onClick={() => setActiveMenu('customerList')}
+            >
+              전체 고객
+            </button>
           </div>
-
-          {/* 빠른 메뉴 */}
+          {/* 검색 결과 */}
+          {dashboardSearch && (
+            <div className="bg-white rounded-lg shadow p-4 mb-4">
+              <h3 className="text-sm font-bold mb-2">검색 결과</h3>
+              {dashboardFilteredCustomers.length === 0 ? (
+                <div className="text-gray-500">검색 결과가 없습니다.</div>
+              ) : (
+                <ul>
+                  {dashboardFilteredCustomers.map((c) => (
+                    <li
+                      key={c.id}
+                      className="py-2 border-b last:border-b-0 cursor-pointer hover:text-blue-600"
+                      onClick={() => setCustomerDetail(c)}
+                    >
+                      {c.name} ({c.phone})
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {/* 최근 방문 고객 10명 */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              빠른 메뉴
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">최근 방문 고객 (최대 10명)</h3>
               <button
-                onClick={() => setActiveMenu('customer')}
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
+                className="text-blue-600 hover:underline text-sm"
+                onClick={() => setActiveMenu('customerList')}
               >
-                <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <div className="text-sm font-medium">신규 고객 등록</div>
-              </button>
-              <button
-                onClick={() => setActiveMenu('work')}
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
-              >
-                <Calendar className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <div className="text-sm font-medium">일정 관리</div>
-              </button>
-              <button
-                onClick={() => setActiveMenu('management')}
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
-              >
-                <DollarSign className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                <div className="text-sm font-medium">매출 통계</div>
-              </button>
-              <button
-                onClick={() => setActiveMenu('sms')}
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
-              >
-                <MessageSquare className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-                <div className="text-sm font-medium">SMS 발송</div>
+                전체 고객 보기
               </button>
             </div>
+            {recentCustomers.length > 0 ? (
+              <div className="space-y-3">
+                {recentCustomers.map((customer) => (
+                  <div
+                    key={customer.id}
+                    className="flex justify-between items-center p-3 bg-gray-50 rounded cursor-pointer hover:bg-blue-100"
+                    onClick={() => setCustomerDetail(customer)}
+                  >
+                    <div>
+                      <div className="font-medium">{customer.name}</div>
+                      <div className="text-sm text-gray-600">{customer.category}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{customer.totalCost.toLocaleString()}원</div>
+                      <div className="text-xs text-gray-500">{customer.paymentMethod}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>최근 방문한 고객이 없습니다.</p>
+              </div>
+            )}
           </div>
-
-          {/* 오늘 일정 미리보기 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                오늘 예약 일정
-              </h3>
-              {todayAppointments.length > 0 ? (
-                <div className="space-y-3">
-                  {todayAppointments.slice(0, 5).map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className="flex justify-between items-center p-3 bg-gray-50 rounded"
-                    >
-                      <div>
-                        <div className="font-medium">
-                          {appointment.time} - {appointment.customerName}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {appointment.service}
-                        </div>
-                      </div>
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          appointment.status === '예약확정'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {appointment.status}
-                      </span>
-                    </div>
-                  ))}
-                  {todayAppointments.length > 5 && (
-                    <div className="text-center text-sm text-gray-500">
-                      +{todayAppointments.length - 5}개 더
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>오늘 예약된 일정이 없습니다.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                최근 방문 고객
-              </h3>
-              {todayCustomers.length > 0 ? (
-                <div className="space-y-3">
-                  {todayCustomers.slice(0, 5).map((customer) => (
-                    <div
-                      key={customer.id}
-                      className="flex justify-between items-center p-3 bg-gray-50 rounded"
-                    >
-                      <div>
-                        <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-gray-600">
-                          {customer.category}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">
-                          {customer.totalCost.toLocaleString()}원
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {customer.paymentMethod}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>오늘 방문한 고객이 없습니다.</p>
-                </div>
-              )}
-            </div>
-          </div>
+          {customerDetail && <CustomerDetailModal customer={customerDetail} onClose={() => setCustomerDetail(null)} />}
         </div>
       );
     }
@@ -1159,18 +1306,40 @@ function App() {
             신규 고객 등록
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            {/* 여러명 고객명 입력란 */}
+            <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 고객명 *
               </label>
-              <input
-                type="text"
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                value={newCustomer.name}
-                onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, name: e.target.value })
-                }
-              />
+              {customerNames.map((name, idx) => (
+                <div key={idx} className="flex items-center mb-2 gap-2">
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    value={name}
+                    onChange={e => handleChangeCustomerName(idx, e.target.value)}
+                    placeholder={`고객명${customerNames.length > 1 ? ` (${idx + 1})` : ''}`}
+                  />
+                  {customerNames.length > 1 && (
+                    <button
+                      type="button"
+                      className="text-red-500 hover:text-red-700 text-lg px-2"
+                      onClick={() => handleRemoveCustomerName(idx)}
+                    >
+                      ×
+                    </button>
+                  )}
+                  {idx === customerNames.length - 1 && (
+                    <button
+                      type="button"
+                      className="text-blue-600 hover:text-blue-800 text-lg px-2"
+                      onClick={handleAddCustomerName}
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1218,18 +1387,74 @@ function App() {
                 ))}
               </select>
             </div>
+            {/* 상품 검색 및 선택 */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                상품 검색 및 선택
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="상품명을 입력하세요"
+                  value={productSearch}
+                  onChange={e => {
+                    setProductSearch(e.target.value);
+                    setShowProductDropdown(true);
+                  }}
+                  onFocus={() => setShowProductDropdown(true)}
+                  autoComplete="off"
+                />
+                {showProductDropdown && productSearch && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {productInfos.filter(p => p.name.includes(productSearch)).length === 0 ? (
+                      <div className="p-3 text-gray-500 text-center">검색 결과가 없습니다.</div>
+                    ) : (
+                      productInfos
+                        .filter(p => p.name.includes(productSearch))
+                        .map(p => (
+                          <div
+                            key={p.id}
+                            className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                            onClick={() => handleAddProductToCustomer(p)}
+                          >
+                            <span className="font-medium">{p.name}</span>
+                            <span className="ml-2 text-blue-600">{Number(p.price).toLocaleString()}원</span>
+                            {p.note && <span className="ml-2 text-xs text-gray-400">({p.note})</span>}
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* 선택된 상품 리스트 */}
+              {selectedProducts.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedProducts.map((p) => (
+                    <div key={p.id} className="flex items-center bg-blue-50 rounded px-2 py-1 text-sm">
+                      <span>{p.name} <span className="text-blue-600">{Number(p.price).toLocaleString()}원</span></span>
+                      <button
+                        className="ml-1 text-red-500 hover:text-red-700"
+                        onClick={() => handleRemoveProductFromCustomer(p.id)}
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* 총 촬영비용 (자동합산, 읽기전용) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                총 촬영비용 (원)
+                총 촬영비용 (자동합산)
               </label>
               <input
-                type="number"
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                value={newCustomer.totalCost}
-                onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, totalCost: e.target.value })
-                }
-                placeholder="0"
+                type="text"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100"
+                value={totalSelectedProductPrice.toLocaleString() + '원'}
+                readOnly
               />
             </div>
             <div>
@@ -2391,6 +2616,14 @@ function App() {
           </div>
         </div>
       );
+    }
+
+    if (activeMenu === 'customerList') {
+      return renderCustomerList();
+    }
+
+    if (activeMenu === 'productInfo') {
+      return renderProductInfo();
     }
 
     return (
