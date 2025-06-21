@@ -159,6 +159,17 @@ function App() {
   const [productInfos, setProductInfos] = useState<ProductInfo[]>(
     () => loadFromStorage('studioProductInfos') || []
   );
+  // 촬영정보 입력 상태
+  const [newShootingName, setNewShootingName] = useState('');
+  const [newShootingNote, setNewShootingNote] = useState('');
+
+  // 촬영종류(촬영정보) 상태 추가 및 localStorage 연동
+  const [shootingInfos, setShootingInfos] = useState<{id: number, name: string, note: string}[]>(() => loadFromStorage('studioShootingInfos') || []);
+
+  // 신규 고객 등록용 촬영정보 선택 상태
+  const [selectedShootingInfos, setSelectedShootingInfos] = useState<{id: number, name: string, note: string}[]>([]);
+  const [shootingSearch, setShootingSearch] = useState('');
+  const [showShootingDropdown, setShowShootingDropdown] = useState(false);
 
   const initialCustomers: Customer[] = [
     {
@@ -319,7 +330,10 @@ function App() {
       id: 'productInfo',
       name: '상품가격정보',
       icon: CreditCard,
-      subMenus: [],
+      subMenus: [
+        { id: 'product', name: '상품정보' },
+        { id: 'shooting', name: '촬영정보' },
+      ],
     },
   ];
 
@@ -1335,6 +1349,73 @@ function App() {
     </div>
   );
 
+  // 촬영정보 관리 UI
+  const renderShootingInfo = () => (
+    <div className="p-4">
+      <h2 className="text-lg font-bold mb-2">촬영정보 관리</h2>
+      <form
+        onSubmit={e => {
+          e.preventDefault();
+          if (!newShootingName.trim()) return;
+          const newInfo = { id: Date.now(), name: newShootingName, note: newShootingNote };
+          setShootingInfos(prev => {
+            const updated = [...prev, newInfo];
+            saveToStorage('studioShootingInfos', updated);
+            return updated;
+          });
+          setNewShootingName('');
+          setNewShootingNote('');
+        }}
+        className="flex gap-2 mb-4"
+      >
+        <input
+          type="text"
+          value={newShootingName}
+          onChange={e => setNewShootingName(e.target.value)}
+          placeholder="촬영 종류 입력"
+          className="border px-2 py-1 rounded w-40"
+        />
+        <input
+          type="text"
+          value={newShootingNote}
+          onChange={e => setNewShootingNote(e.target.value)}
+          placeholder="비고"
+          className="border px-2 py-1 rounded w-40"
+        />
+        <button type="submit" className="bg-blue-500 text-white px-3 py-1 rounded">추가</button>
+      </form>
+      <table className="w-full text-sm">
+        <thead>
+          <tr>
+            <th className="text-left">촬영종류</th>
+            <th className="text-left">비고</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {shootingInfos.map(info => (
+            <tr key={info.id}>
+              <td>{info.name}</td>
+              <td>{info.note}</td>
+              <td>
+                <button
+                  className="text-red-500"
+                  onClick={() => {
+                    setShootingInfos(prev => {
+                      const updated = prev.filter(i => i.id !== info.id);
+                      saveToStorage('studioShootingInfos', updated);
+                      return updated;
+                    });
+                  }}
+                >삭제</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   // 메인 콘텐츠 렌더링 함수
   const renderContent = () => {
     if (activeMenu === 'dashboard') {
@@ -1786,6 +1867,67 @@ function App() {
                   현금
                 </label>
               </div>
+            </div>
+            {/* 촬영정보 선택 */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-1">촬영정보</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="촬영정보를 입력하세요"
+                  value={shootingSearch}
+                  onChange={e => {
+                    setShootingSearch(e.target.value);
+                    setShowShootingDropdown(true);
+                  }}
+                  onFocus={() => setShowShootingDropdown(true)}
+                  autoComplete="off"
+                />
+                {showShootingDropdown && shootingSearch && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {shootingInfos.filter(s => s.name.includes(shootingSearch)).length === 0 ? (
+                      <div className="p-3 text-gray-500 text-center">검색 결과가 없습니다.</div>
+                    ) : (
+                      shootingInfos
+                        .filter(s => s.name.includes(shootingSearch))
+                        .map(s => (
+                          <div
+                            key={s.id}
+                            className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                            onClick={() => {
+                              if (!selectedShootingInfos.find(sel => sel.id === s.id)) {
+                                setSelectedShootingInfos([...selectedShootingInfos, s]);
+                              }
+                              setShootingSearch('');
+                              setShowShootingDropdown(false);
+                            }}
+                          >
+                            <span className="font-medium">{s.name}</span>
+                            {s.note && <span className="ml-2 text-xs text-gray-400">({s.note})</span>}
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* 선택된 촬영정보 리스트 */}
+              {selectedShootingInfos.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedShootingInfos.map((s) => (
+                    <div key={s.id} className="flex items-center bg-green-50 rounded px-2 py-1 text-sm">
+                      <span>{s.name}</span>
+                      <button
+                        className="ml-1 text-red-500 hover:text-red-700"
+                        onClick={() => setSelectedShootingInfos(selectedShootingInfos.filter(sel => sel.id !== s.id))}
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -2862,6 +3004,10 @@ function App() {
 
     if (activeMenu === 'productInfo') {
       return renderProductInfo();
+    }
+
+    if (activeMenu === 'shootingInfo') {
+      return renderShootingInfo();
     }
 
     return (
