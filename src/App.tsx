@@ -6,14 +6,9 @@ import {
   Camera,
   Plus,
   Search,
-  Edit,
-  Trash2,
-  Phone,
   Clock,
   CreditCard,
   DollarSign,
-  FileText,
-  Settings,
 } from 'lucide-react';
 
 // 컴포넌트 외부에 메모리 스토리지 선언 (리렌더링시 초기화 방지)
@@ -44,7 +39,6 @@ function App() {
 
   // 메인 애플리케이션 상태
   const [activeMenu, setActiveMenu] = useState('dashboard');
-  const [activeSubMenu, setActiveSubMenu] = useState('home');
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
