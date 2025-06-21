@@ -749,6 +749,11 @@ function App() {
     setShowProductDropdown(false);
   }, [activeMenu]);
 
+  // 창 제목 변경
+  useEffect(() => {
+    document.title = '클라쓰가 다른 고객관리';
+  }, []);
+
   // 로그인 페이지 컴포넌트
   const LoginPage = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -758,7 +763,7 @@ function App() {
             📷
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            스튜디오 관리
+            클라쓰가 다른 고객관리
           </h1>
           <p className="text-gray-600 mb-4">
             {authMode === 'login' && '로그인하여 스튜디오 관리를 시작하세요'}
@@ -1215,7 +1220,7 @@ function App() {
       return (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-semibold text-gray-900">대시보드</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">클라쓰가 다른 고객관리</h2>
             <div className="text-sm text-gray-500">실시간 스튜디오 현황</div>
           </div>
           <div className="flex items-center gap-4 mb-2">
