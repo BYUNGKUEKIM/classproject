@@ -87,14 +87,6 @@ interface Day {
   isToday?: boolean;
 }
 
-interface MonthlyData {
-  month: number;
-  customers: number;
-  revenue: number;
-  cardPayments: number;
-  cashPayments: number;
-}
-
 // 상품 가격 정보 상태
 interface ProductInfo {
   id: number;
