@@ -1457,7 +1457,7 @@ function App() {
   // 상품정보 메뉴 렌더링 시 탭 UI 추가
   const renderProductInfoTabs = () => (
     <div className="bg-white shadow rounded-lg p-6 max-w-2xl mx-auto">
-      : renderShootingInfo()}
+      {renderProductInfo()}
     </div>
   );
 
