@@ -1306,36 +1306,7 @@ function App() {
               setNewProductRows(updated);
             }}
           />
-          {/* 촬영종류 드롭다운 추가 */}
-          <select
-            className="border px-2 py-1 rounded w-1/4"
-            value={row.defaultShootingTypeId || ''}
-            onChange={e => {
-              const updated = [...newProductRows];
-              updated[idx].defaultShootingTypeId = e.target.value;
-              setNewProductRows(updated);
-            }}
-          >
-            <option value="">촬영종류 선택</option>
-            {shootingInfos.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          <button
-            className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 text-sm"
-            onClick={() => {
-              if (!row.name || !row.price) return;
-              setProductInfos([
-                ...productInfos,
-                { ...row, id: Date.now(), defaultShootingTypeId: row.defaultShootingTypeId },
-              ]);
-              setNewProductRows(newProductRows.filter((_, i: number) => i !== idx));
-            }}
-          >
-            저장
-          </button>
-        </div>
-      ))}
+          
       {/* 저장된 상품 리스트 */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">상품 목록</h3>
