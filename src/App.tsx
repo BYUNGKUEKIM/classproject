@@ -93,6 +93,7 @@ interface ProductInfo {
   name: string;
   price: string;
   note: string;
+  defaultShootingTypeId?: string;
 }
 
 // ProductInfo에 shootingTypeId를 추가한 타입 정의
@@ -171,14 +172,6 @@ function App() {
 
   // 촬영종류(촬영정보) 상태 추가 및 localStorage 연동
   const [shootingInfos, setShootingInfos] = useState<{id: number, name: string, price: string, note: string}[]>(() => loadFromStorage('studioShootingInfos') || []);
-
-  // 신규 고객 등록용 촬영정보 선택 상태
-  const [selectedShootingInfos, setSelectedShootingInfos] = useState<{id: number, name: string, price: string, note: string}[]>([]);
-  const [shootingSearch, setShootingSearch] = useState('');
-  const [showShootingDropdown, setShowShootingDropdown] = useState(false);
-
-  // 상품정보/촬영종류 탭 상태
-  const [productTab, setProductTab] = useState<'product' | 'shooting'>('product');
 
   const initialCustomers: Customer[] = [
     {
@@ -737,7 +730,7 @@ function App() {
     if (!selectedProducts.find((p) => p.id === product.id)) {
       setSelectedProducts([
         ...selectedProducts,
-        { ...product, shootingTypeId: '' },
+        { ...product, shootingTypeId: product.defaultShootingTypeId || '' },
       ]);
     }
     setProductSearch('');
@@ -1325,13 +1318,28 @@ function App() {
               setNewProductRows(updated);
             }}
           />
+          {/* 촬영종류 드롭다운 추가 */}
+          <select
+            className="border px-2 py-1 rounded w-1/4"
+            value={row.defaultShootingTypeId || ''}
+            onChange={e => {
+              const updated = [...newProductRows];
+              updated[idx].defaultShootingTypeId = e.target.value;
+              setNewProductRows(updated);
+            }}
+          >
+            <option value="">촬영종류 선택</option>
+            {shootingInfos.map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
           <button
             className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 text-sm"
             onClick={() => {
               if (!row.name || !row.price) return;
               setProductInfos([
                 ...productInfos,
-                { ...row, id: Date.now() },
+                { ...row, id: Date.now(), defaultShootingTypeId: row.defaultShootingTypeId },
               ]);
               setNewProductRows(newProductRows.filter((_, i: number) => i !== idx));
             }}
