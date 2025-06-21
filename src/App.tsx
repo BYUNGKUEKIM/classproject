@@ -1006,28 +1006,68 @@ function App() {
     </div>
   );
 
-  // 고객 상세 모달
-  const CustomerDetailModal = ({ customer, onClose }: { customer: Customer, onClose: () => void }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-        <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">✕</button>
-        <h2 className="text-xl font-bold mb-4">고객 정보</h2>
-        <div className="space-y-2">
-          <div><b>이름:</b> {customer.name}</div>
-          <div><b>전화번호:</b> {customer.phone}</div>
-          <div><b>이메일:</b> {customer.email}</div>
-          <div><b>카테고리:</b> {customer.category}</div>
-          <div><b>총 방문:</b> {customer.totalVisits}회</div>
-          <div><b>최근 방문일:</b> {customer.lastVisit}</div>
-          <div><b>메모:</b> {customer.notes}</div>
-          <div><b>총 비용:</b> {customer.totalCost.toLocaleString()}원</div>
-          <div><b>선금:</b> {customer.deposit.toLocaleString()}원</div>
-          <div><b>결제방법:</b> {customer.paymentMethod}</div>
-          <div><b>선금 결제방법:</b> {customer.depositMethod}</div>
+  // 고객 상세 모달 (실무 스타일, 불필요 항목 제거)
+  const CustomerDetailModal = ({ customer, onClose }: { customer: Customer, onClose: () => void }) => {
+    // 예시: 고객번호, 등록일, 상품명, 계약일, 계약금, 잔금 등은 customer 객체에 맞게 가공 필요
+    // 여기서는 customer.id, name, phone, email, category, lastVisit, totalCost, deposit, notes만 사용
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+          <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl">×</button>
+          <div className="flex items-center mb-4">
+            <div className="text-3xl mr-3">👤</div>
+            <div>
+              <div className="text-xl font-bold">{customer.name}</div>
+              <div className="text-xs text-gray-500">고객번호: {customer.id}</div>
+              <div className="text-xs text-gray-500">등록일: {customer.lastVisit}</div>
+            </div>
+          </div>
+          <table className="w-full mb-4 text-sm">
+            <tbody>
+              <tr>
+                <td className="font-medium text-gray-700 w-24">연락처</td>
+                <td>{customer.phone}</td>
+                <td className="font-medium text-gray-700 w-24">이메일</td>
+                <td>{customer.email || '-'}</td>
+              </tr>
+              <tr>
+                <td className="font-medium text-gray-700">상품명</td>
+                <td>{customer.category}</td>
+                <td className="font-medium text-gray-700">총 방문</td>
+                <td>{customer.totalVisits}회</td>
+              </tr>
+              <tr>
+                <td className="font-medium text-gray-700">총 비용</td>
+                <td>{customer.totalCost.toLocaleString()}원</td>
+                <td className="font-medium text-gray-700">선금</td>
+                <td>{customer.deposit.toLocaleString()}원</td>
+              </tr>
+              <tr>
+                <td className="font-medium text-gray-700">결제방법</td>
+                <td>{customer.paymentMethod}</td>
+                <td className="font-medium text-gray-700">잔금</td>
+                <td>{(customer.totalCost - customer.deposit).toLocaleString()}원</td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-700 mb-1">상담/메모</label>
+            <textarea
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              rows={3}
+              value={customer.notes}
+              readOnly
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">저장</button>
+            <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">인쇄</button>
+            <button className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">삭제</button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // 고객 리스트 페이지
   const renderCustomerList = () => {
