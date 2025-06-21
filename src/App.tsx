@@ -2451,9 +2451,6 @@ function App() {
             onClick={() => {
               setIsLoggedIn(false);
               setUserInfo(null);
-              Object.keys(memoryStorage).forEach(
-                (key) => delete memoryStorage[key]
-              );
             }}
             className="mt-2 w-full text-xs bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded"
           >
