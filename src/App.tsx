@@ -20,7 +20,6 @@ interface Customer {
   lastVisit: string;
   totalVisits: number;
   notes: string;
-  category: string;
   totalCost: number;
   deposit: number;
   paymentMethod: string;
@@ -52,7 +51,6 @@ interface NewCustomer {
   name: string;
   phone: string;
   email: string;
-  category: string;
   notes: string;
   totalCost: string;
   deposit: string;
@@ -70,7 +68,6 @@ interface NewAppointment {
     name: string;
     phone: string;
     email: string;
-    category: string;
   };
   date: string;
   time: string;
@@ -182,7 +179,6 @@ function App() {
       lastVisit: '2024-06-08',
       totalVisits: 3,
       notes: '프로필 촬영',
-      category: '프로필사진',
       totalCost: 150000,
       deposit: 50000,
       paymentMethod: '카드',
@@ -196,7 +192,6 @@ function App() {
       lastVisit: '2024-06-08',
       totalVisits: 1,
       notes: '가족사진 촬영',
-      category: '가족사진',
       totalCost: 200000,
       deposit: 100000,
       paymentMethod: '현금',
@@ -236,7 +231,6 @@ function App() {
     name: '',
     phone: '',
     email: '',
-    category: '반명함사진',
     notes: '',
     totalCost: '',
     deposit: '',
@@ -254,7 +248,6 @@ function App() {
       name: '',
       phone: '',
       email: '',
-      category: '반명함사진',
     },
     date: '',
     time: '',
@@ -571,7 +564,6 @@ function App() {
       name: '',
       phone: '',
       email: '',
-      category: '반명함사진',
       notes: '',
       totalCost: '',
       deposit: '',
@@ -598,7 +590,6 @@ function App() {
           name: newAppointment.newCustomerInfo.name,
           phone: newAppointment.newCustomerInfo.phone,
           email: newAppointment.newCustomerInfo.email || '',
-          category: newAppointment.newCustomerInfo.category,
           notes: '',
           totalCost: 0,
           deposit: 0,
@@ -633,7 +624,6 @@ function App() {
           name: '',
           phone: '',
           email: '',
-          category: '반명함사진',
         },
         date: '',
         time: '',
@@ -1233,7 +1223,6 @@ function App() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">카테고리</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">최근 방문일</th>
               </tr>
             </thead>
@@ -1242,7 +1231,6 @@ function App() {
                 <tr key={customer.id} className="hover:bg-blue-50 cursor-pointer" onClick={() => setCustomerDetail(customer)}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{customer.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.category}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.lastVisit}</td>
                 </tr>
               ))}
@@ -2003,7 +1991,6 @@ function App() {
                   name: '',
                   phone: '',
                   email: '',
-                  category: '반명함사진',
                   notes: '',
                   totalCost: '',
                   deposit: '',
@@ -2615,7 +2602,6 @@ function App() {
                           name: '',
                           phone: '',
                           email: '',
-                          category: '반명함사진',
                         },
                         date: day.fullDate,
                         time: '',
@@ -2961,7 +2947,6 @@ function App() {
                           name: '',
                           phone: '',
                           email: '',
-                          category: '반명함사진',
                         },
                         date: '',
                         time: '',
