@@ -161,10 +161,11 @@ function App() {
   );
   // 촬영정보 입력 상태
   const [newShootingName, setNewShootingName] = useState('');
+  const [newShootingPrice, setNewShootingPrice] = useState('');
   const [newShootingNote, setNewShootingNote] = useState('');
 
   // 촬영종류(촬영정보) 상태 추가 및 localStorage 연동
-  const [shootingInfos, setShootingInfos] = useState<{id: number, name: string, note: string}[]>(() => loadFromStorage('studioShootingInfos') || []);
+  const [shootingInfos, setShootingInfos] = useState<{id: number, name: string, price: string, note: string}[]>(() => loadFromStorage('studioShootingInfos') || []);
 
   // 신규 고객 등록용 촬영정보 선택 상태
   const [selectedShootingInfos, setSelectedShootingInfos] = useState<{id: number, name: string, note: string}[]>([]);
@@ -1352,7 +1353,7 @@ function App() {
     </div>
   );
 
-  // 촬영정보 관리 UI
+  // 촬영정보 관리 UI (가격 입력 및 표시 추가)
   const renderShootingInfo = () => (
     <div className="p-4">
       <h2 className="text-lg font-bold mb-2">촬영정보 관리</h2>
@@ -1360,13 +1361,14 @@ function App() {
         onSubmit={e => {
           e.preventDefault();
           if (!newShootingName.trim()) return;
-          const newInfo = { id: Date.now(), name: newShootingName, note: newShootingNote };
+          const newInfo = { id: Date.now(), name: newShootingName, price: newShootingPrice, note: newShootingNote };
           setShootingInfos(prev => {
             const updated = [...prev, newInfo];
             saveToStorage('studioShootingInfos', updated);
             return updated;
           });
           setNewShootingName('');
+          setNewShootingPrice('');
           setNewShootingNote('');
         }}
         className="flex gap-2 mb-4"
@@ -1376,7 +1378,14 @@ function App() {
           value={newShootingName}
           onChange={e => setNewShootingName(e.target.value)}
           placeholder="촬영 종류 입력"
-          className="border px-2 py-1 rounded w-40"
+          className="border px-2 py-1 rounded w-32"
+        />
+        <input
+          type="number"
+          value={newShootingPrice}
+          onChange={e => setNewShootingPrice(e.target.value)}
+          placeholder="가격"
+          className="border px-2 py-1 rounded w-24"
         />
         <input
           type="text"
@@ -1391,6 +1400,7 @@ function App() {
         <thead>
           <tr>
             <th className="text-left">촬영종류</th>
+            <th className="text-left">가격</th>
             <th className="text-left">비고</th>
             <th></th>
           </tr>
@@ -1399,6 +1409,7 @@ function App() {
           {shootingInfos.map(info => (
             <tr key={info.id}>
               <td>{info.name}</td>
+              <td>{info.price ? Number(info.price).toLocaleString() + '원' : '-'}</td>
               <td>{info.note}</td>
               <td>
                 <button
