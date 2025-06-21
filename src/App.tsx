@@ -1751,8 +1751,8 @@ function App() {
                 ))}
               </select>
             </div>
-            {/* 상품 검색 및 선택 */}
-            <div className="col-span-2">
+            {/* 상품 검색 및 선택 - 가로 절반만 차지하도록 col-span-1로 변경 */}
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 상품 검색 및 선택
               </label>
