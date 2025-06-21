@@ -138,7 +138,7 @@ function App() {
   const [authSuccess, setAuthSuccess] = useState('');
 
   // 메인 애플리케이션 상태
-  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [activeMenu, setActiveMenu] = useState<string>('dashboard');
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [smsMessage, setSmsMessage] = useState('');
   const [selectedCustomers, setSelectedCustomers] = useState<number[]>([]);
@@ -1006,10 +1006,28 @@ function App() {
     </div>
   );
 
-  // 고객 상세 모달 (실무 스타일, 불필요 항목 제거)
+  // 고객 상세 모달 (계약일, 상품 검색/선택, 계약금 자동, 메모, 버튼)
   const CustomerDetailModal = ({ customer, onClose }: { customer: Customer, onClose: () => void }) => {
-    // 예시: 고객번호, 등록일, 상품명, 계약일, 계약금, 잔금 등은 customer 객체에 맞게 가공 필요
-    // 여기서는 customer.id, name, phone, email, category, lastVisit, totalCost, deposit, notes만 사용
+    // 모달 내 상태: 계약일, 선택상품, 메모
+    const [contractDate, setContractDate] = useState(customer.lastVisit || '');
+    const [selectedProducts, setSelectedProducts] = useState<ProductInfo[]>([]);
+    const [productSearch, setProductSearch] = useState('');
+    const [showProductDropdown, setShowProductDropdown] = useState(false);
+    const [memo, setMemo] = useState(customer.notes || '');
+
+    // 상품 추가/삭제
+    const handleAddProduct = (product: ProductInfo) => {
+      if (!selectedProducts.find((p) => p.id === product.id)) {
+        setSelectedProducts([...selectedProducts, product]);
+      }
+      setProductSearch('');
+      setShowProductDropdown(false);
+    };
+    const handleRemoveProduct = (id: number) => {
+      setSelectedProducts(selectedProducts.filter((p) => p.id !== id));
+    };
+    const totalProductPrice = selectedProducts.reduce((sum, p) => sum + Number(p.price), 0);
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
@@ -1026,27 +1044,118 @@ function App() {
             <tbody>
               <tr>
                 <td className="font-medium text-gray-700 w-24">연락처</td>
-                <td>{customer.phone}</td>
+                <td>
+                  <span
+                    className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
+                    onClick={() => {
+                      setActiveMenu('sms');
+                      setSelectedCustomers([customer.id]);
+                      onClose();
+                    }}
+                  >
+                    {customer.phone}
+                  </span>
+                </td>
                 <td className="font-medium text-gray-700 w-24">이메일</td>
-                <td>{customer.email || '-'}</td>
+                <td>
+                  {customer.email ? (
+                    <a
+                      href={`https://mail.naver.com/write?to=${customer.email}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-800"
+                    >
+                      {customer.email}
+                    </a>
+                  ) : (
+                    '-'
+                  )}
+                </td>
               </tr>
               <tr>
-                <td className="font-medium text-gray-700">상품명</td>
-                <td>{customer.category}</td>
+                <td className="font-medium text-gray-700">계약일</td>
+                <td colSpan={3}>
+                  <input
+                    type="date"
+                    className="border rounded px-2 py-1 text-sm"
+                    value={contractDate}
+                    onChange={e => setContractDate(e.target.value)}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-gray-700">상품</td>
+                <td colSpan={3}>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="상품명을 입력하세요"
+                      value={productSearch}
+                      onChange={e => {
+                        setProductSearch(e.target.value);
+                        setShowProductDropdown(true);
+                      }}
+                      onFocus={() => setShowProductDropdown(true)}
+                      autoComplete="off"
+                    />
+                    {showProductDropdown && productSearch && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {productInfos.filter(p => p.name.includes(productSearch)).length === 0 ? (
+                          <div className="p-3 text-gray-500 text-center">검색 결과가 없습니다.</div>
+                        ) : (
+                          productInfos
+                            .filter(p => p.name.includes(productSearch))
+                            .map(p => (
+                              <div
+                                key={p.id}
+                                className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                onClick={() => handleAddProduct(p)}
+                              >
+                                <span className="font-medium">{p.name}</span>
+                                <span className="ml-2 text-blue-600">{Number(p.price).toLocaleString()}원</span>
+                                {p.note && <span className="ml-2 text-xs text-gray-400">({p.note})</span>}
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* 선택된 상품 리스트 */}
+                  {selectedProducts.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedProducts.map((p) => (
+                        <div key={p.id} className="flex items-center bg-blue-50 rounded px-2 py-1 text-sm">
+                          <span>{p.name} <span className="text-blue-600">{Number(p.price).toLocaleString()}원</span></span>
+                          <button
+                            className="ml-1 text-red-500 hover:text-red-700"
+                            onClick={() => handleRemoveProduct(p.id)}
+                            type="button"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-gray-700">계약금</td>
+                <td colSpan={3}>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100"
+                    value={totalProductPrice.toLocaleString() + '원'}
+                    readOnly
+                  />
+                </td>
+              </tr>
+              <tr>
                 <td className="font-medium text-gray-700">총 방문</td>
                 <td>{customer.totalVisits}회</td>
-              </tr>
-              <tr>
-                <td className="font-medium text-gray-700">총 비용</td>
-                <td>{customer.totalCost.toLocaleString()}원</td>
-                <td className="font-medium text-gray-700">선금</td>
-                <td>{customer.deposit.toLocaleString()}원</td>
-              </tr>
-              <tr>
-                <td className="font-medium text-gray-700">결제방법</td>
-                <td>{customer.paymentMethod}</td>
-                <td className="font-medium text-gray-700">잔금</td>
-                <td>{(customer.totalCost - customer.deposit).toLocaleString()}원</td>
+                <td className="font-medium text-gray-700">상품 카테고리</td>
+                <td>{customer.category}</td>
               </tr>
             </tbody>
           </table>
@@ -1055,8 +1164,8 @@ function App() {
             <textarea
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
               rows={3}
-              value={customer.notes}
-              readOnly
+              value={memo}
+              onChange={e => setMemo(e.target.value)}
             />
           </div>
           <div className="flex justify-end gap-2 mt-4">
