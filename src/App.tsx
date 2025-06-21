@@ -1939,6 +1939,7 @@ function App() {
                             }}
                           >
                             <span className="font-medium">{s.name}</span>
+                            <span className="ml-2 text-green-600">{s.price ? Number(s.price).toLocaleString() + '원' : ''}</span>
                             {s.note && <span className="ml-2 text-xs text-gray-400">({s.note})</span>}
                           </div>
                         ))
@@ -1951,7 +1952,7 @@ function App() {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {selectedShootingInfos.map((s) => (
                     <div key={s.id} className="flex items-center bg-green-50 rounded px-2 py-1 text-sm">
-                      <span>{s.name}</span>
+                      <span>{s.name} <span className="text-green-600">{s.price ? Number(s.price).toLocaleString() + '원' : ''}</span></span>
                       <button
                         className="ml-1 text-red-500 hover:text-red-700"
                         onClick={() => setSelectedShootingInfos(selectedShootingInfos.filter(sel => sel.id !== s.id))}
@@ -1963,6 +1964,10 @@ function App() {
                   ))}
                 </div>
               )}
+              {/* 촬영종류 합계 */}
+              <div className="mt-2 text-right text-sm font-semibold text-green-700">
+                합계: {selectedShootingInfos.reduce((sum, s) => sum + Number(s.price || 0), 0).toLocaleString()}원
+              </div>
             </div>
           </div>
 
