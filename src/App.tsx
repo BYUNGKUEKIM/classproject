@@ -1234,6 +1234,118 @@ function App() {
               )}
             </div>
           )}
+
+          {/* --- 빠른 메뉴 복원 --- */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">빠른 메뉴</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <button
+                onClick={() => setActiveMenu('customer')}
+                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
+              >
+                <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                <div className="text-sm font-medium">신규 고객 등록</div>
+              </button>
+              <button
+                onClick={() => setActiveMenu('work')}
+                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
+              >
+                <Calendar className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                <div className="text-sm font-medium">일정 관리</div>
+              </button>
+              <button
+                onClick={() => setActiveMenu('management')}
+                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
+              >
+                <DollarSign className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                <div className="text-sm font-medium">매출 통계</div>
+              </button>
+              <button
+                onClick={() => setActiveMenu('sms')}
+                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
+              >
+                <MessageSquare className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                <div className="text-sm font-medium">SMS 발송</div>
+              </button>
+            </div>
+          </div>
+
+          {/* --- 오늘 일정/고객 미리보기 복원 --- */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">오늘 예약 일정</h3>
+              {getTodayAppointments().length > 0 ? (
+                <div className="space-y-3">
+                  {getTodayAppointments().slice(0, 5).map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded"
+                    >
+                      <div>
+                        <div className="font-medium">
+                          {appointment.time} - {appointment.customerName}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {appointment.service}
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          appointment.status === '예약확정'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {appointment.status}
+                      </span>
+                    </div>
+                  ))}
+                  {getTodayAppointments().length > 5 && (
+                    <div className="text-center text-sm text-gray-500">
+                      +{getTodayAppointments().length - 5}개 더
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>오늘 예약된 일정이 없습니다.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">오늘 방문 고객</h3>
+              {customers.filter((c) => c.lastVisit === new Date().toISOString().split('T')[0]).length > 0 ? (
+                <div className="space-y-3">
+                  {customers
+                    .filter((c) => c.lastVisit === new Date().toISOString().split('T')[0])
+                    .slice(0, 5)
+                    .map((customer) => (
+                      <div
+                        key={customer.id}
+                        className="flex justify-between items-center p-3 bg-gray-50 rounded"
+                      >
+                        <div>
+                          <div className="font-medium">{customer.name}</div>
+                          <div className="text-sm text-gray-600">{customer.category}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">{customer.totalCost.toLocaleString()}원</div>
+                          <div className="text-xs text-gray-500">{customer.paymentMethod}</div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>오늘 방문한 고객이 없습니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* 최근 방문 고객 10명 */}
           <div className="bg-white shadow rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
