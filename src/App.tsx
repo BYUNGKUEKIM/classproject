@@ -119,6 +119,9 @@ const loadFromStorage = (key: string) => {
   }
 };
 
+// 촬영 카테고리 배열 복원
+const photoCategories = ['프로필', '가족', '웨딩', '증명', '행사', '기타'];
+
 function App() {
   // ref 선언 (로그인용)
   const usernameRef = useRef<HTMLInputElement>(null);
@@ -1295,7 +1298,8 @@ function App() {
               setNewProductRows(updated);
             }}
           />
-          
+        </div>
+      ))}
       {/* 저장된 상품 리스트 */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">상품 목록</h3>
