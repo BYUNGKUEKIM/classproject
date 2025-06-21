@@ -95,13 +95,6 @@ interface ProductInfo {
   note: string;
 }
 
-// 상품 입력 행 상태
-const [newProductRows, setNewProductRows] = useState<ProductInfo[]>([]);
-// 상품 목록 상태
-const [productInfos, setProductInfos] = useState<ProductInfo[]>(
-  () => loadFromStorage('studioProductInfos') || []
-);
-
 // --- 브라우저 스토리지 헬퍼 함수 ---
 const saveToStorage = (key: string, data: any) => {
   try {
@@ -159,6 +152,13 @@ function App() {
 
   // 고객 등록용 이름 배열 상태
   const [customerNames, setCustomerNames] = useState<string[]>(['']);
+
+  // 상품 입력 행 상태
+  const [newProductRows, setNewProductRows] = useState<ProductInfo[]>([]);
+  // 상품 목록 상태
+  const [productInfos, setProductInfos] = useState<ProductInfo[]>(
+    () => loadFromStorage('studioProductInfos') || []
+  );
 
   const initialCustomers: Customer[] = [
     {
