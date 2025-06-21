@@ -95,8 +95,24 @@ interface MonthlyData {
   cashPayments: number;
 }
 
-// 컴포넌트 외부에 메모리 스토리지 선언 (리렌더링시 초기화 방지)
-const memoryStorage: { [key: string]: string } = {};
+// --- 브라우저 스토리지 헬퍼 함수 ---
+const saveToStorage = (key: string, data: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.error(`localStorage 저장 실패: ${key}`, e);
+  }
+};
+
+const loadFromStorage = (key: string) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : null;
+  } catch (e) {
+    console.error(`localStorage 불러오기 실패: ${key}`, e);
+    return null;
+  }
+};
 
 function App() {
   // ref 선언 (로그인용)
@@ -127,7 +143,7 @@ function App() {
   const [smsMessage, setSmsMessage] = useState('');
   const [selectedCustomers, setSelectedCustomers] = useState<number[]>([]);
 
-  const [customers, setCustomers] = useState<Customer[]>([
+  const initialCustomers: Customer[] = [
     {
       id: 1,
       name: '김철수',
@@ -156,9 +172,9 @@ function App() {
       paymentMethod: '현금',
       depositMethod: '카드',
     },
-  ]);
+  ];
 
-  const [appointments, setAppointments] = useState<Appointment[]>([
+  const initialAppointments: Appointment[] = [
     {
       id: 1,
       customerName: '김철수',
@@ -177,7 +193,14 @@ function App() {
       status: '예약대기',
       notes: '4인 가족사진',
     },
-  ]);
+  ];
+
+  const [customers, setCustomers] = useState<Customer[]>(
+    () => loadFromStorage('studioCustomers') || initialCustomers
+  );
+  const [appointments, setAppointments] = useState<Appointment[]>(
+    () => loadFromStorage('studioAppointments') || initialAppointments
+  );
 
   const [newCustomer, setNewCustomer] = useState<NewCustomer>({
     name: '',
@@ -271,12 +294,6 @@ function App() {
     },
   ];
 
-  // 간단한 메모리 스토리지 함수들
-  const saveToStorage = (key: string, data: any) => {
-    memoryStorage[key] = JSON.stringify(data);
-    console.log(`저장됨: ${key}`, data); // 디버깅용
-  };
-
   // 인증 관련 함수들
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -333,9 +350,7 @@ function App() {
       return;
     }
 
-    const existingUsers: User[] = JSON.parse(
-      memoryStorage['studioUsers'] || '[]'
-    );
+    const existingUsers: User[] = loadFromStorage('studioUsers') || [];
     const userExists = existingUsers.some(
       (user: User) => user.username === username || user.email === email
     );
@@ -359,7 +374,7 @@ function App() {
       };
 
       const users = [...existingUsers, newUser];
-      memoryStorage['studioUsers'] = JSON.stringify(users);
+      saveToStorage('studioUsers', users);
 
       setIsLoading(false);
       setAuthSuccess('회원가입이 완료되었습니다! 자동 로그인 중...');
@@ -390,7 +405,7 @@ function App() {
 
     setIsLoading(true);
     setTimeout(() => {
-      const users: User[] = JSON.parse(memoryStorage['studioUsers'] || '[]');
+      const users: User[] = loadFromStorage('studioUsers') || [];
       console.log('저장된 사용자들:', users); // 디버깅용
 
       const user = users.find(
@@ -431,7 +446,7 @@ function App() {
 
     setIsLoading(true);
     setTimeout(() => {
-      const users: User[] = JSON.parse(memoryStorage['studioUsers'] || '[]');
+      const users: User[] = loadFromStorage('studioUsers') || [];
       const user = users.find(
         (u: User) => u.username === username && u.email === email
       );
@@ -443,6 +458,13 @@ function App() {
       }
       setIsLoading(false);
     }, 1000);
+  };
+
+  // 로그아웃 처리
+  const handleLogout = () => {
+    localStorage.removeItem('studioUserInfo');
+    setIsLoggedIn(false);
+    setUserInfo(null);
   };
 
   // 메인 애플리케이션 함수들
@@ -2381,13 +2403,29 @@ function App() {
     );
   };
 
-  // 초기 데이터 로드
+  // 초기 데이터 및 로그인 상태 로드
   useEffect(() => {
-    // 사용자가 없으면 빈 배열로 초기화
-    if (!memoryStorage['studioUsers']) {
+    // 사용자 목록 초기화
+    if (loadFromStorage('studioUsers') === null) {
       saveToStorage('studioUsers', []);
     }
+
+    // 로그인 상태 복원
+    const loggedInUser = loadFromStorage('studioUserInfo');
+    if (loggedInUser) {
+      setUserInfo(loggedInUser);
+      setIsLoggedIn(true);
+    }
   }, []);
+
+  // 데이터 변경 시 LocalStorage에 자동 저장
+  useEffect(() => {
+    saveToStorage('studioCustomers', customers);
+  }, [customers]);
+
+  useEffect(() => {
+    saveToStorage('studioAppointments', appointments);
+  }, [appointments]);
 
   // 로그인 상태가 아니면 로그인 페이지 표시
   if (!isLoggedIn) {
@@ -2448,10 +2486,7 @@ function App() {
             <p>{new Date().toLocaleTimeString('ko-KR')}</p>
           </div>
           <button
-            onClick={() => {
-              setIsLoggedIn(false);
-              setUserInfo(null);
-            }}
+            onClick={handleLogout}
             className="mt-2 w-full text-xs bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded"
           >
             로그아웃
