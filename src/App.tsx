@@ -1,25 +1,119 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Users, MessageSquare, Camera, Plus, Search, Edit, Trash2, Phone, Clock, CreditCard, DollarSign, FileText, Settings } from 'lucide-react';
+import {
+  Calendar,
+  Users,
+  MessageSquare,
+  Camera,
+  Plus,
+  Search,
+  Clock,
+  CreditCard,
+  DollarSign,
+} from 'lucide-react';
+
+// --- 타입 정의 ---
+interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  lastVisit: string;
+  totalVisits: number;
+  notes: string;
+  category: string;
+  totalCost: number;
+  deposit: number;
+  paymentMethod: string;
+  depositMethod: string;
+}
+
+interface Appointment {
+  id: number;
+  customerName: string;
+  date: string;
+  time: string;
+  service: string;
+  status: string;
+  notes: string;
+}
+
+interface User {
+  id: string;
+  username: string;
+  password?: string;
+  email: string;
+  phone: string;
+  studioName: string;
+  createdAt: string;
+  profile_image: string;
+}
+
+interface NewCustomer {
+  name: string;
+  phone: string;
+  email: string;
+  category: string;
+  notes: string;
+  totalCost: string;
+  deposit: string;
+  paymentMethod: string;
+  depositMethod: string;
+}
+
+interface NewAppointment {
+  customerName: string;
+  customerPhone: string;
+  isNewCustomer: boolean;
+  customerSearch: string;
+  showCustomerList: boolean;
+  newCustomerInfo: {
+    name: string;
+    phone: string;
+    email: string;
+    category: string;
+  };
+  date: string;
+  time: string;
+  service: string;
+  notes: string;
+}
+
+interface Day {
+  date: number;
+  isCurrentMonth: boolean;
+  fullDate: string;
+  hasAppointment?: boolean;
+  appointments?: Appointment[];
+  isToday?: boolean;
+}
+
+interface MonthlyData {
+  month: number;
+  customers: number;
+  revenue: number;
+  cardPayments: number;
+  cashPayments: number;
+}
 
 // 컴포넌트 외부에 메모리 스토리지 선언 (리렌더링시 초기화 방지)
-const memoryStorage = {};
+const memoryStorage: { [key: string]: string } = {};
 
-const StudioManagement = () => {
+function App() {
   // ref 선언 (로그인용)
-  const usernameRef = useRef();
-  const passwordRef = useRef();
-  const regUsernameRef = useRef();
-  const regPasswordRef = useRef();
-  const regConfirmPasswordRef = useRef();
-  const regEmailRef = useRef();
-  const regPhoneRef = useRef();
-  const regStudioNameRef = useRef();
-  const forgotUsernameRef = useRef();
-  const forgotEmailRef = useRef();
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const regUsernameRef = useRef<HTMLInputElement>(null);
+  const regPasswordRef = useRef<HTMLInputElement>(null);
+  const regConfirmPasswordRef = useRef<HTMLInputElement>(null);
+  const regEmailRef = useRef<HTMLInputElement>(null);
+  const regPhoneRef = useRef<HTMLInputElement>(null);
+  const regStudioNameRef = useRef<HTMLInputElement>(null);
+  const forgotUsernameRef = useRef<HTMLInputElement>(null);
+  const forgotEmailRef = useRef<HTMLInputElement>(null);
 
   // 로그인 및 기본 상태
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
+  const [userInfo, setUserInfo] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // 인증 관련 상태
@@ -29,13 +123,11 @@ const StudioManagement = () => {
 
   // 메인 애플리케이션 상태
   const [activeMenu, setActiveMenu] = useState('dashboard');
-  const [activeSubMenu, setActiveSubMenu] = useState('home');
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
-  const [selectedCustomers, setSelectedCustomers] = useState([]);
+  const [selectedCustomers, setSelectedCustomers] = useState<number[]>([]);
 
-  const [customers, setCustomers] = useState([
+  const [customers, setCustomers] = useState<Customer[]>([
     {
       id: 1,
       name: '김철수',
@@ -48,7 +140,7 @@ const StudioManagement = () => {
       totalCost: 150000,
       deposit: 50000,
       paymentMethod: '카드',
-      depositMethod: '현금'
+      depositMethod: '현금',
     },
     {
       id: 2,
@@ -62,11 +154,11 @@ const StudioManagement = () => {
       totalCost: 200000,
       deposit: 100000,
       paymentMethod: '현금',
-      depositMethod: '카드'
-    }
+      depositMethod: '카드',
+    },
   ]);
 
-  const [appointments, setAppointments] = useState([
+  const [appointments, setAppointments] = useState<Appointment[]>([
     {
       id: 1,
       customerName: '김철수',
@@ -74,7 +166,7 @@ const StudioManagement = () => {
       time: '10:00',
       service: '프로필사진',
       status: '예약확정',
-      notes: '정장 2벌 준비'
+      notes: '정장 2벌 준비',
     },
     {
       id: 2,
@@ -83,11 +175,11 @@ const StudioManagement = () => {
       time: '14:00',
       service: '가족사진',
       status: '예약대기',
-      notes: '4인 가족사진'
-    }
+      notes: '4인 가족사진',
+    },
   ]);
 
-  const [newCustomer, setNewCustomer] = useState({
+  const [newCustomer, setNewCustomer] = useState<NewCustomer>({
     name: '',
     phone: '',
     email: '',
@@ -96,10 +188,10 @@ const StudioManagement = () => {
     totalCost: '',
     deposit: '',
     paymentMethod: '카드',
-    depositMethod: '카드'
+    depositMethod: '카드',
   });
 
-  const [newAppointment, setNewAppointment] = useState({
+  const [newAppointment, setNewAppointment] = useState<NewAppointment>({
     customerName: '',
     customerPhone: '',
     isNewCustomer: false,
@@ -109,17 +201,24 @@ const StudioManagement = () => {
       name: '',
       phone: '',
       email: '',
-      category: '반명함사진'
+      category: '반명함사진',
     },
     date: '',
     time: '',
     service: '',
-    notes: ''
+    notes: '',
   });
 
   const photoCategories = [
-    '반명함사진', '여권사진', '비자사진', '민증사진', '운전면허사진',
-    '프로필사진', '가족사진', '필름현상', '단체사진'
+    '반명함사진',
+    '여권사진',
+    '비자사진',
+    '민증사진',
+    '운전면허사진',
+    '프로필사진',
+    '가족사진',
+    '필름현상',
+    '단체사진',
   ];
 
   const menuItems = [
@@ -127,9 +226,7 @@ const StudioManagement = () => {
       id: 'dashboard',
       name: '대시보드',
       icon: Camera,
-      subMenus: [
-        { id: 'home', name: '홈' }
-      ]
+      subMenus: [{ id: 'home', name: '홈' }],
     },
     {
       id: 'customer',
@@ -138,8 +235,8 @@ const StudioManagement = () => {
       subMenus: [
         { id: 'register', name: '고객 등록' },
         { id: 'list', name: '고객 목록' },
-        { id: 'search', name: '고객 검색' }
-      ]
+        { id: 'search', name: '고객 검색' },
+      ],
     },
     {
       id: 'management',
@@ -148,16 +245,14 @@ const StudioManagement = () => {
       subMenus: [
         { id: 'daily', name: '일별 매출' },
         { id: 'monthly', name: '월별 통계' },
-        { id: 'yearly', name: '연간 통계' }
-      ]
+        { id: 'yearly', name: '연간 통계' },
+      ],
     },
     {
       id: 'work',
       name: '월스케줄',
       icon: Calendar,
-      subMenus: [
-        { id: 'calendar', name: '달력 보기' }
-      ]
+      subMenus: [{ id: 'calendar', name: '달력 보기' }],
     },
     {
       id: 'reservation',
@@ -165,40 +260,34 @@ const StudioManagement = () => {
       icon: Clock,
       subMenus: [
         { id: 'today', name: '오늘 일정' },
-        { id: 'week', name: '주간 일정' }
-      ]
+        { id: 'week', name: '주간 일정' },
+      ],
     },
     {
       id: 'sms',
       name: 'SMS',
       icon: MessageSquare,
-      subMenus: [
-        { id: 'send', name: 'SMS 발송' }
-      ]
-    }
+      subMenus: [{ id: 'send', name: 'SMS 발송' }],
+    },
   ];
 
   // 간단한 메모리 스토리지 함수들
-  const saveToStorage = (key, data) => {
+  const saveToStorage = (key: string, data: any) => {
     memoryStorage[key] = JSON.stringify(data);
     console.log(`저장됨: ${key}`, data); // 디버깅용
   };
-  const loadFromStorage = (key, defaultValue = null) => {
-    const stored = memoryStorage[key];
-    return stored ? JSON.parse(stored) : defaultValue;
-  };
 
   // 인증 관련 함수들
-  const validateEmail = (email) => {
+  const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const validatePassword = (password) => {
+  const validatePassword = (password: string) => {
     return password.length >= 6;
   };
 
-  const validatePhone = (phone) => {
+  const validatePhone = (phone: string) => {
     const phoneRegex = /^01[0-9]-?[0-9]{4}-?[0-9]{4}$/;
     return phoneRegex.test(phone.replace(/-/g, ''));
   };
@@ -244,9 +333,11 @@ const StudioManagement = () => {
       return;
     }
 
-    const existingUsers = JSON.parse(memoryStorage['studioUsers'] || '[]');
-    const userExists = existingUsers.some(user => 
-      user.username === username || user.email === email
+    const existingUsers: User[] = JSON.parse(
+      memoryStorage['studioUsers'] || '[]'
+    );
+    const userExists = existingUsers.some(
+      (user: User) => user.username === username || user.email === email
     );
 
     if (userExists) {
@@ -256,7 +347,7 @@ const StudioManagement = () => {
 
     setIsLoading(true);
     setTimeout(() => {
-      const newUser = {
+      const newUser: User = {
         id: Date.now().toString(),
         username,
         password,
@@ -264,7 +355,7 @@ const StudioManagement = () => {
         phone,
         studioName,
         createdAt: new Date().toISOString(),
-        profile_image: '👤'
+        profile_image: '👤',
       };
 
       const users = [...existingUsers, newUser];
@@ -272,7 +363,7 @@ const StudioManagement = () => {
 
       setIsLoading(false);
       setAuthSuccess('회원가입이 완료되었습니다! 자동 로그인 중...');
-      
+
       // 회원가입 후 자동 로그인
       setTimeout(() => {
         setUserInfo(newUser);
@@ -299,11 +390,11 @@ const StudioManagement = () => {
 
     setIsLoading(true);
     setTimeout(() => {
-      const users = JSON.parse(memoryStorage['studioUsers'] || '[]');
+      const users: User[] = JSON.parse(memoryStorage['studioUsers'] || '[]');
       console.log('저장된 사용자들:', users); // 디버깅용
-      
-      const user = users.find(u => 
-        u.username === username && u.password === password
+
+      const user = users.find(
+        (u: User) => u.username === username && u.password === password
       );
 
       console.log('찾은 사용자:', user); // 디버깅용
@@ -340,9 +431,9 @@ const StudioManagement = () => {
 
     setIsLoading(true);
     setTimeout(() => {
-      const users = JSON.parse(memoryStorage['studioUsers'] || '[]');
-      const user = users.find(u => 
-        u.username === username && u.email === email
+      const users: User[] = JSON.parse(memoryStorage['studioUsers'] || '[]');
+      const user = users.find(
+        (u: User) => u.username === username && u.email === email
       );
 
       if (user) {
@@ -359,7 +450,9 @@ const StudioManagement = () => {
     const slots = [];
     for (let hour = 9; hour <= 18; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        const timeStr = `${String(hour).padStart(2, '0')}:${String(
+          minute
+        ).padStart(2, '0')}`;
         slots.push(timeStr);
       }
     }
@@ -368,19 +461,31 @@ const StudioManagement = () => {
 
   const handleAddCustomer = () => {
     if (newCustomer.name && newCustomer.phone) {
-      const customer = {
+      const customer: Customer = {
         id: Date.now(),
-        ...newCustomer,
+        name: newCustomer.name,
+        phone: newCustomer.phone,
+        email: newCustomer.email,
+        notes: newCustomer.notes,
+        category: newCustomer.category,
+        paymentMethod: newCustomer.paymentMethod,
+        depositMethod: newCustomer.depositMethod,
         totalCost: parseInt(newCustomer.totalCost) || 0,
         deposit: parseInt(newCustomer.deposit) || 0,
         lastVisit: new Date().toISOString().split('T')[0],
-        totalVisits: 0
+        totalVisits: 1,
       };
       setCustomers([...customers, customer]);
       setNewCustomer({
-        name: '', phone: '', email: '', category: '반명함사진',
-        notes: '', totalCost: '', deposit: '',
-        paymentMethod: '카드', depositMethod: '카드'
+        name: '',
+        phone: '',
+        email: '',
+        category: '반명함사진',
+        notes: '',
+        totalCost: '',
+        deposit: '',
+        paymentMethod: '카드',
+        depositMethod: '카드',
       });
     }
   };
@@ -389,8 +494,12 @@ const StudioManagement = () => {
     if (newAppointment.date && newAppointment.time && newAppointment.service) {
       let customerName = newAppointment.customerName;
 
-      if (newAppointment.isNewCustomer && newAppointment.newCustomerInfo.name && newAppointment.newCustomerInfo.phone) {
-        const newCustomerData = {
+      if (
+        newAppointment.isNewCustomer &&
+        newAppointment.newCustomerInfo.name &&
+        newAppointment.newCustomerInfo.phone
+      ) {
+        const newCustomerData: Customer = {
           id: Date.now(),
           name: newAppointment.newCustomerInfo.name,
           phone: newAppointment.newCustomerInfo.phone,
@@ -402,49 +511,45 @@ const StudioManagement = () => {
           paymentMethod: '카드',
           depositMethod: '카드',
           lastVisit: newAppointment.date,
-          totalVisits: 1
+          totalVisits: 1,
         };
         setCustomers([...customers, newCustomerData]);
         customerName = newAppointment.newCustomerInfo.name;
       }
-      
-      const appointment = {
+
+      const appointment: Appointment = {
         id: Date.now() + 1,
         customerName: customerName,
         date: newAppointment.date,
         time: newAppointment.time,
         service: newAppointment.service,
         notes: newAppointment.notes || '',
-        status: '예약확정'
+        status: '예약확정',
       };
-      
+
       setAppointments([...appointments, appointment]);
-      
+
       setNewAppointment({
         customerName: '',
         customerPhone: '',
         isNewCustomer: false,
         customerSearch: '',
         showCustomerList: false,
-        newCustomerInfo: { name: '', phone: '', email: '', category: '반명함사진' },
-        date: '', time: '', service: '', notes: ''
+        newCustomerInfo: {
+          name: '',
+          phone: '',
+          email: '',
+          category: '반명함사진',
+        },
+        date: '',
+        time: '',
+        service: '',
+        notes: '',
       });
       setShowAppointmentForm(false);
     } else {
       alert('필수 정보를 모두 입력해주세요.');
     }
-  };
-
-  const handleDeleteCustomer = (customerId) => {
-    setCustomers(customers.filter(c => c.id !== customerId));
-  };
-
-  const toggleCustomerSelection = (customerId) => {
-    setSelectedCustomers(prev =>
-      prev.includes(customerId)
-        ? prev.filter(id => id !== customerId)
-        : [...prev, customerId]
-    );
   };
 
   const handleSendSMS = () => {
@@ -457,50 +562,40 @@ const StudioManagement = () => {
 
   const getDailySales = () => {
     const today = new Date().toISOString().split('T')[0];
-    const todayCustomers = customers.filter(c => c.lastVisit === today);
+    const todayCustomers = customers.filter((c) => c.lastVisit === today);
     return todayCustomers.reduce((sum, c) => sum + (c.totalCost || 0), 0);
   };
 
   const getMonthlyData = () => {
     const currentYear = new Date().getFullYear();
-    const monthlyData = [];
+    const monthlyData: MonthlyData[] = [];
 
     for (let month = 0; month < 12; month++) {
-      const monthCustomers = customers.filter(c => {
+      const monthCustomers = customers.filter((c: Customer) => {
         const visitDate = new Date(c.lastVisit);
-        return visitDate.getFullYear() === currentYear && visitDate.getMonth() === month;
+        return (
+          visitDate.getFullYear() === currentYear &&
+          visitDate.getMonth() === month
+        );
       });
-      
+
       monthlyData.push({
         month: month + 1,
         customers: monthCustomers.length,
         revenue: monthCustomers.reduce((sum, c) => sum + (c.totalCost || 0), 0),
-        cardPayments: monthCustomers.filter(c => c.paymentMethod === '카드').length,
-        cashPayments: monthCustomers.filter(c => c.paymentMethod === '현금').length
+        cardPayments: monthCustomers.filter((c) => c.paymentMethod === '카드')
+          .length,
+        cashPayments: monthCustomers.filter((c) => c.paymentMethod === '현금')
+          .length,
       });
     }
 
     return monthlyData;
   };
 
-  const getYearlyData = () => {
-    const years = [...new Set(customers.map(c => new Date(c.lastVisit).getFullYear()))].sort();
-
-    return years.map(year => {
-      const yearCustomers = customers.filter(c => new Date(c.lastVisit).getFullYear() === year);
-      return {
-        year,
-        customers: yearCustomers.length,
-        revenue: yearCustomers.reduce((sum, c) => sum + (c.totalCost || 0), 0),
-        cardPayments: yearCustomers.filter(c => c.paymentMethod === '카드').length,
-        cashPayments: yearCustomers.filter(c => c.paymentMethod === '현금').length
-      };
-    });
-  };
-
   const getTodayAppointments = () => {
     const today = new Date().toISOString().split('T')[0];
-    return appointments.filter(apt => apt.date === today);
+    return appointments.filter((apt) => apt.date === today);
   };
 
   // 달력 날짜 생성
@@ -512,39 +607,43 @@ const StudioManagement = () => {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startDayOfWeek = firstDay.getDay();
 
-    const days = [];
+    const days: Day[] = [];
 
     for (let i = startDayOfWeek - 1; i >= 0; i--) {
       const prevDate = new Date(year, month, -i);
-      days.push({ 
-        date: prevDate.getDate(), 
+      days.push({
+        date: prevDate.getDate(),
         isCurrentMonth: false,
-        fullDate: prevDate.toISOString().split('T')[0]
+        fullDate: prevDate.toISOString().split('T')[0],
       });
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayAppointments = appointments.filter(apt => apt.date === dateStr);
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(
+        day
+      ).padStart(2, '0')}`;
+      const dayAppointments = appointments.filter(
+        (apt: Appointment) => apt.date === dateStr
+      );
       const isToday = dateStr === new Date().toISOString().split('T')[0];
-      
-      days.push({ 
-        date: day, 
-        isCurrentMonth: true, 
+
+      days.push({
+        date: day,
+        isCurrentMonth: true,
         hasAppointment: dayAppointments.length > 0,
         appointments: dayAppointments,
         fullDate: dateStr,
-        isToday: isToday
+        isToday: isToday,
       });
     }
 
     const remainingCells = 42 - days.length;
     for (let day = 1; day <= remainingCells; day++) {
       const nextDate = new Date(year, month + 1, day);
-      days.push({ 
-        date: day, 
+      days.push({
+        date: day,
         isCurrentMonth: false,
-        fullDate: nextDate.toISOString().split('T')[0]
+        fullDate: nextDate.toISOString().split('T')[0],
       });
     }
 
@@ -559,18 +658,28 @@ const StudioManagement = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full mb-4 text-white text-4xl">
             📷
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">스튜디오 관리</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            스튜디오 관리
+          </h1>
           <p className="text-gray-600 mb-4">
             {authMode === 'login' && '로그인하여 스튜디오 관리를 시작하세요'}
             {authMode === 'register' && '회원가입하여 스튜디오를 등록하세요'}
             {authMode === 'forgot' && '비밀번호를 찾아드립니다'}
           </p>
           <div className="bg-green-100 border border-green-200 rounded-lg p-3 text-sm text-green-700 mb-8">
-            ✅ <strong>한글 입력 완전 해결!</strong><br/>
-            💾 REF 방식으로 최적화<br/>
-            🧪 <strong>테스트 계정:</strong> test / 123456<br/>
-            <button 
-              onClick={() => console.log('저장된 사용자:', JSON.parse(memoryStorage['studioUsers'] || '[]'))}
+            ✅ <strong>한글 입력 완전 해결!</strong>
+            <br />
+            💾 REF 방식으로 최적화
+            <br />
+            🧪 <strong>테스트 계정:</strong> test / 123456
+            <br />
+            <button
+              onClick={() =>
+                console.log(
+                  '저장된 사용자:',
+                  JSON.parse(memoryStorage['studioUsers'] || '[]')
+                )
+              }
               className="underline text-green-700 hover:text-green-800"
             >
               디버그: 사용자 확인
@@ -582,14 +691,16 @@ const StudioManagement = () => {
           {/* 로그인 폼 */}
           {authMode === 'login' && (
             <div className="space-y-4">
-              <h3 className="text-center text-lg font-semibold mb-4">계정으로 로그인</h3>
-              
+              <h3 className="text-center text-lg font-semibold mb-4">
+                계정으로 로그인
+              </h3>
+
               {authError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
                   {authError}
                 </div>
               )}
-              
+
               {authSuccess && (
                 <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md text-sm">
                   {authSuccess}
@@ -607,13 +718,15 @@ const StudioManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium">비밀번호</label>
+                <label className="block mb-2 text-sm font-medium">
+                  비밀번호
+                </label>
                 <input
                   ref={passwordRef}
                   type="password"
                   placeholder="비밀번호를 입력하세요"
                   className="w-full p-3 border border-gray-300 rounded-md text-sm box-border"
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: React.KeyboardEvent) => {
                     if (e.key === 'Enter') {
                       handleLogin();
                     }
@@ -625,7 +738,9 @@ const StudioManagement = () => {
                 onClick={handleLogin}
                 disabled={isLoading}
                 className={`w-full p-3 text-white rounded-md text-base font-semibold ${
-                  isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                  isLoading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
                 {isLoading ? '로그인 중...' : '로그인'}
@@ -651,14 +766,16 @@ const StudioManagement = () => {
           {/* 회원가입 폼 */}
           {authMode === 'register' && (
             <div className="space-y-4">
-              <h3 className="text-center text-lg font-semibold mb-4">회원가입</h3>
-              
+              <h3 className="text-center text-lg font-semibold mb-4">
+                회원가입
+              </h3>
+
               {authError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
                   {authError}
                 </div>
               )}
-              
+
               {authSuccess && (
                 <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md text-sm">
                   {authSuccess}
@@ -666,7 +783,9 @@ const StudioManagement = () => {
               )}
 
               <div>
-                <label className="block mb-2 text-sm font-medium">아이디 *</label>
+                <label className="block mb-2 text-sm font-medium">
+                  아이디 *
+                </label>
                 <input
                   ref={regUsernameRef}
                   type="text"
@@ -676,7 +795,9 @@ const StudioManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium">비밀번호 *</label>
+                <label className="block mb-2 text-sm font-medium">
+                  비밀번호 *
+                </label>
                 <input
                   ref={regPasswordRef}
                   type="password"
@@ -686,7 +807,9 @@ const StudioManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium">비밀번호 확인 *</label>
+                <label className="block mb-2 text-sm font-medium">
+                  비밀번호 확인 *
+                </label>
                 <input
                   ref={regConfirmPasswordRef}
                   type="password"
@@ -696,17 +819,21 @@ const StudioManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium">이메일 *</label>
+                <label className="block mb-2 text-sm font-medium">
+                  이메일 *
+                </label>
                 <input
                   ref={regEmailRef}
                   type="email"
-                  placeholder="example@email.com"
+                  placeholder="example@example.com"
                   className="w-full p-3 border border-gray-300 rounded-md text-sm box-border"
                 />
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium">전화번호 *</label>
+                <label className="block mb-2 text-sm font-medium">
+                  전화번호 *
+                </label>
                 <input
                   ref={regPhoneRef}
                   type="tel"
@@ -716,7 +843,9 @@ const StudioManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium">스튜디오명 *</label>
+                <label className="block mb-2 text-sm font-medium">
+                  스튜디오명 *
+                </label>
                 <input
                   ref={regStudioNameRef}
                   type="text"
@@ -729,7 +858,9 @@ const StudioManagement = () => {
                 onClick={handleRegister}
                 disabled={isLoading}
                 className={`w-full p-3 text-white rounded-md text-base font-semibold ${
-                  isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                  isLoading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
                 }`}
               >
                 {isLoading ? '가입 중...' : '회원가입'}
@@ -749,14 +880,16 @@ const StudioManagement = () => {
           {/* 비밀번호 찾기 폼 */}
           {authMode === 'forgot' && (
             <div className="space-y-4">
-              <h3 className="text-center text-lg font-semibold mb-4">비밀번호 찾기</h3>
-              
+              <h3 className="text-center text-lg font-semibold mb-4">
+                비밀번호 찾기
+              </h3>
+
               {authError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
                   {authError}
                 </div>
               )}
-              
+
               {authSuccess && (
                 <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md text-sm">
                   {authSuccess}
@@ -787,7 +920,9 @@ const StudioManagement = () => {
                 onClick={handleForgotPassword}
                 disabled={isLoading}
                 className={`w-full p-3 text-white rounded-md text-base font-semibold ${
-                  isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
+                  isLoading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-yellow-600 hover:bg-yellow-700'
                 }`}
               >
                 {isLoading ? '찾는 중...' : '비밀번호 찾기'}
@@ -817,7 +952,9 @@ const StudioManagement = () => {
   // 메인 콘텐츠 렌더링 함수
   const renderContent = () => {
     if (activeMenu === 'dashboard') {
-      const todayCustomers = customers.filter(c => c.lastVisit === new Date().toISOString().split('T')[0]);
+      const todayCustomers = customers.filter(
+        (c) => c.lastVisit === new Date().toISOString().split('T')[0]
+      );
       const todayAppointments = getTodayAppointments();
       const monthlyData = getMonthlyData();
       const currentMonth = new Date().getMonth();
@@ -827,9 +964,7 @@ const StudioManagement = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-semibold text-gray-900">대시보드</h2>
-            <div className="text-sm text-gray-500">
-              실시간 스튜디오 현황
-            </div>
+            <div className="text-sm text-gray-500">실시간 스튜디오 현황</div>
           </div>
 
           {/* 오늘 요약 */}
@@ -839,27 +974,33 @@ const StudioManagement = () => {
                 <Users className="h-8 w-8 mr-4" />
                 <div>
                   <p className="text-blue-100">오늘 방문</p>
-                  <p className="text-2xl font-bold">{todayCustomers.length}명</p>
+                  <p className="text-2xl font-bold">
+                    {todayCustomers.length}명
+                  </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow rounded-lg p-6">
               <div className="flex items-center">
                 <DollarSign className="h-8 w-8 mr-4" />
                 <div>
                   <p className="text-green-100">오늘 매출</p>
-                  <p className="text-2xl font-bold">{getDailySales().toLocaleString()}원</p>
+                  <p className="text-2xl font-bold">
+                    {getDailySales().toLocaleString()}원
+                  </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow rounded-lg p-6">
               <div className="flex items-center">
                 <Calendar className="h-8 w-8 mr-4" />
                 <div>
                   <p className="text-purple-100">오늘 예약</p>
-                  <p className="text-2xl font-bold">{todayAppointments.length}건</p>
+                  <p className="text-2xl font-bold">
+                    {todayAppointments.length}건
+                  </p>
                 </div>
               </div>
             </div>
@@ -869,7 +1010,9 @@ const StudioManagement = () => {
                 <Camera className="h-8 w-8 mr-4" />
                 <div>
                   <p className="text-orange-100">이번 달</p>
-                  <p className="text-2xl font-bold">{thisMonthData.customers}명</p>
+                  <p className="text-2xl font-bold">
+                    {thisMonthData.customers}명
+                  </p>
                 </div>
               </div>
             </div>
@@ -877,7 +1020,9 @@ const StudioManagement = () => {
 
           {/* 빠른 메뉴 */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">빠른 메뉴</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              빠른 메뉴
+            </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <button
                 onClick={() => setActiveMenu('customer')}
@@ -913,18 +1058,31 @@ const StudioManagement = () => {
           {/* 오늘 일정 미리보기 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">오늘 예약 일정</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                오늘 예약 일정
+              </h3>
               {todayAppointments.length > 0 ? (
                 <div className="space-y-3">
                   {todayAppointments.slice(0, 5).map((appointment) => (
-                    <div key={appointment.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div
+                      key={appointment.id}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded"
+                    >
                       <div>
-                        <div className="font-medium">{appointment.time} - {appointment.customerName}</div>
-                        <div className="text-sm text-gray-600">{appointment.service}</div>
+                        <div className="font-medium">
+                          {appointment.time} - {appointment.customerName}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {appointment.service}
+                        </div>
                       </div>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        appointment.status === '예약확정' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          appointment.status === '예약확정'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
                         {appointment.status}
                       </span>
                     </div>
@@ -944,18 +1102,29 @@ const StudioManagement = () => {
             </div>
 
             <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">최근 방문 고객</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                최근 방문 고객
+              </h3>
               {todayCustomers.length > 0 ? (
                 <div className="space-y-3">
                   {todayCustomers.slice(0, 5).map((customer) => (
-                    <div key={customer.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div
+                      key={customer.id}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded"
+                    >
                       <div>
                         <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-gray-600">{customer.category}</div>
+                        <div className="text-sm text-gray-600">
+                          {customer.category}
+                        </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{(customer.totalCost || 0).toLocaleString()}원</div>
-                        <div className="text-xs text-gray-500">{customer.paymentMethod}</div>
+                        <div className="font-medium">
+                          {customer.totalCost.toLocaleString()}원
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {customer.paymentMethod}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -975,71 +1144,101 @@ const StudioManagement = () => {
     if (activeMenu === 'customer') {
       return (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-6">신규 고객 등록</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-6">
+            신규 고객 등록
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">고객명 *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                고객명 *
+              </label>
               <input
                 type="text"
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                 value={newCustomer.name}
-                onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, name: e.target.value })
+                }
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">전화번호 *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                전화번호 *
+              </label>
               <input
                 type="tel"
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                 value={newCustomer.phone}
-                onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, phone: e.target.value })
+                }
                 placeholder="010-0000-0000"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                이메일
+              </label>
               <input
                 type="email"
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                 value={newCustomer.email}
-                onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, email: e.target.value })
+                }
                 placeholder="email@example.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">촬영종류</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                촬영종류
+              </label>
               <select
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                 value={newCustomer.category}
-                onChange={(e) => setNewCustomer({...newCustomer, category: e.target.value})}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, category: e.target.value })
+                }
               >
                 {photoCategories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">총 촬영비용 (원)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                총 촬영비용 (원)
+              </label>
               <input
                 type="number"
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                 value={newCustomer.totalCost}
-                onChange={(e) => setNewCustomer({...newCustomer, totalCost: e.target.value})}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, totalCost: e.target.value })
+                }
                 placeholder="0"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">선금 (원)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                선금 (원)
+              </label>
               <input
                 type="number"
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                 value={newCustomer.deposit}
-                onChange={(e) => setNewCustomer({...newCustomer, deposit: e.target.value})}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, deposit: e.target.value })
+                }
                 placeholder="0"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">총비용 결제방법</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                총비용 결제방법
+              </label>
               <div className="flex space-x-4 mt-1">
                 <label className="flex items-center">
                   <input
@@ -1047,7 +1246,12 @@ const StudioManagement = () => {
                     name="paymentMethod"
                     value="카드"
                     checked={newCustomer.paymentMethod === '카드'}
-                    onChange={(e) => setNewCustomer({...newCustomer, paymentMethod: e.target.value})}
+                    onChange={(e) =>
+                      setNewCustomer({
+                        ...newCustomer,
+                        paymentMethod: e.target.value,
+                      })
+                    }
                     className="mr-2"
                   />
                   카드
@@ -1058,7 +1262,12 @@ const StudioManagement = () => {
                     name="paymentMethod"
                     value="현금"
                     checked={newCustomer.paymentMethod === '현금'}
-                    onChange={(e) => setNewCustomer({...newCustomer, paymentMethod: e.target.value})}
+                    onChange={(e) =>
+                      setNewCustomer({
+                        ...newCustomer,
+                        paymentMethod: e.target.value,
+                      })
+                    }
                     className="mr-2"
                   />
                   현금
@@ -1066,7 +1275,9 @@ const StudioManagement = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">선금 결제방법</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                선금 결제방법
+              </label>
               <div className="flex space-x-4 mt-1">
                 <label className="flex items-center">
                   <input
@@ -1074,7 +1285,12 @@ const StudioManagement = () => {
                     name="depositMethod"
                     value="카드"
                     checked={newCustomer.depositMethod === '카드'}
-                    onChange={(e) => setNewCustomer({...newCustomer, depositMethod: e.target.value})}
+                    onChange={(e) =>
+                      setNewCustomer({
+                        ...newCustomer,
+                        depositMethod: e.target.value,
+                      })
+                    }
                     className="mr-2"
                   />
                   카드
@@ -1085,7 +1301,12 @@ const StudioManagement = () => {
                     name="depositMethod"
                     value="현금"
                     checked={newCustomer.depositMethod === '현금'}
-                    onChange={(e) => setNewCustomer({...newCustomer, depositMethod: e.target.value})}
+                    onChange={(e) =>
+                      setNewCustomer({
+                        ...newCustomer,
+                        depositMethod: e.target.value,
+                      })
+                    }
                     className="mr-2"
                   />
                   현금
@@ -1093,14 +1314,18 @@ const StudioManagement = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">메모</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              메모
+            </label>
             <textarea
               className="w-full border border-gray-300 rounded-md px-3 py-2"
-              rows="3"
+              rows={3}
               value={newCustomer.notes}
-              onChange={(e) => setNewCustomer({...newCustomer, notes: e.target.value})}
+              onChange={(e) =>
+                setNewCustomer({ ...newCustomer, notes: e.target.value })
+              }
               placeholder="특이사항이나 요청사항을 입력하세요"
             />
           </div>
@@ -1108,39 +1333,61 @@ const StudioManagement = () => {
           {/* 금액 요약 */}
           {(newCustomer.totalCost || newCustomer.deposit) && (
             <div className="mt-4 p-4 bg-gray-50 rounded-md">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">결제 요약</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                결제 요약
+              </h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">총 촬영비용:</span>
-                  <span className="ml-2 font-medium">{parseInt(newCustomer.totalCost || 0).toLocaleString()}원</span>
+                  <span className="ml-2 font-medium">
+                    {(
+                      parseInt(newCustomer.totalCost) || 0
+                    ).toLocaleString()}
+                    원
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-600">선금:</span>
-                  <span className="ml-2 font-medium">{parseInt(newCustomer.deposit || 0).toLocaleString()}원</span>
+                  <span className="ml-2 font-medium">
+                    {(parseInt(newCustomer.deposit) || 0).toLocaleString()}원
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-600">잔금:</span>
                   <span className="ml-2 font-medium text-red-600">
-                    {(parseInt(newCustomer.totalCost || 0) - parseInt(newCustomer.deposit || 0)).toLocaleString()}원
+                    {(
+                      (parseInt(newCustomer.totalCost) || 0) -
+                      (parseInt(newCustomer.deposit) || 0)
+                    ).toLocaleString()}
+                    원
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">결제방법:</span>
                   <span className="ml-2 font-medium">
-                    총비용: {newCustomer.paymentMethod} | 선금: {newCustomer.depositMethod}
+                    총비용: {newCustomer.paymentMethod} | 선금:{' '}
+                    {newCustomer.depositMethod}
                   </span>
                 </div>
               </div>
             </div>
           )}
-          
+
           <div className="mt-6 flex justify-end space-x-3">
             <button
-              onClick={() => setNewCustomer({
-                name: '', phone: '', email: '', category: '반명함사진',
-                notes: '', totalCost: '', deposit: '',
-                paymentMethod: '카드', depositMethod: '카드'
-              })}
+              onClick={() =>
+                setNewCustomer({
+                  name: '',
+                  phone: '',
+                  email: '',
+                  category: '반명함사진',
+                  notes: '',
+                  totalCost: '',
+                  deposit: '',
+                  paymentMethod: '카드',
+                  depositMethod: '카드',
+                })
+              }
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
             >
               초기화
@@ -1157,41 +1404,57 @@ const StudioManagement = () => {
     }
 
     if (activeMenu === 'management') {
-      const todayCustomers = customers.filter(c => c.lastVisit === new Date().toISOString().split('T')[0]);
+      const todayCustomers = customers.filter(
+        (c) => c.lastVisit === new Date().toISOString().split('T')[0]
+      );
       const todayAppointments = getTodayAppointments();
-      
+
       return (
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">일별 매출 현황</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-900">
+            일별 매출 현황
+          </h2>
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex items-center">
                 <DollarSign className="h-8 w-8 text-green-600 mr-4" />
                 <div>
-                  <p className="text-sm font-medium text-gray-500">오늘 총 매출</p>
-                  <p className="text-2xl font-semibold text-gray-900">{getDailySales().toLocaleString()}원</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    오늘 총 매출
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {getDailySales().toLocaleString()}원
+                  </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-blue-600 mr-4" />
                 <div>
-                  <p className="text-sm font-medium text-gray-500">오늘 방문 고객</p>
-                  <p className="text-2xl font-semibold text-gray-900">{todayCustomers.length}명</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    오늘 방문 고객
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {todayCustomers.length}명
+                  </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex items-center">
                 <CreditCard className="h-8 w-8 text-purple-600 mr-4" />
                 <div>
                   <p className="text-sm font-medium text-gray-500">카드 결제</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {todayCustomers.filter(c => c.paymentMethod === '카드').reduce((sum, c) => sum + (c.totalCost || 0), 0).toLocaleString()}원
+                    {todayCustomers
+                      .filter((c) => c.paymentMethod === '카드')
+                      .reduce((sum, c) => sum + c.totalCost, 0)
+                      .toLocaleString()}
+                    원
                   </p>
                 </div>
               </div>
@@ -1203,7 +1466,11 @@ const StudioManagement = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-500">현금 결제</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {todayCustomers.filter(c => c.paymentMethod === '현금').reduce((sum, c) => sum + (c.totalCost || 0), 0).toLocaleString()}원
+                    {todayCustomers
+                      .filter((c) => c.paymentMethod === '현금')
+                      .reduce((sum, c) => sum + c.totalCost, 0)
+                      .toLocaleString()}
+                    원
                   </p>
                 </div>
               </div>
@@ -1213,32 +1480,59 @@ const StudioManagement = () => {
           {/* 오늘 방문 고객 상세 정보 */}
           <div className="bg-white shadow rounded-lg overflow-hidden">
             <div className="px-6 py-4 bg-gray-50 border-b">
-              <h3 className="text-lg font-medium text-gray-900">오늘 방문 고객 내역</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                오늘 방문 고객 내역
+              </h3>
             </div>
-            
+
             {todayCustomers.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">방문시간</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">고객명</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">촬영종류</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">총 비용</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">선금</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">잔금</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제방법</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        방문시간
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        고객명
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        연락처
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        촬영종류
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        총 비용
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        선금
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        잔금
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        결제방법
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {todayCustomers.map((customer, index) => {
                       // 해당 고객의 오늘 예약 시간 찾기
-                      const customerAppointment = todayAppointments.find(apt => apt.customerName === customer.name);
-                      const visitTime = customerAppointment ? customerAppointment.time : '시간 미정';
-                      
+                      const customerAppointment = todayAppointments.find(
+                        (apt) => apt.customerName === customer.name
+                      );
+                      const visitTime = customerAppointment
+                        ? customerAppointment.time
+                        : '시간 미정';
+
                       return (
-                        <tr key={customer.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr
+                          key={customer.id}
+                          className={
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                          }
+                        >
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {visitTime}
                           </td>
@@ -1252,21 +1546,28 @@ const StudioManagement = () => {
                             {customer.category}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {(customer.totalCost || 0).toLocaleString()}원
+                            {customer.totalCost.toLocaleString()}원
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {(customer.deposit || 0).toLocaleString()}원
-                            <span className="text-xs text-gray-400 ml-1">({customer.depositMethod})</span>
+                            {customer.deposit.toLocaleString()}원
+                            <span className="text-xs text-gray-400 ml-1">
+                              ({customer.depositMethod})
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                            {((customer.totalCost || 0) - (customer.deposit || 0)).toLocaleString()}원
+                            {(
+                              customer.totalCost - customer.deposit
+                            ).toLocaleString()}
+                            원
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              customer.paymentMethod === '카드' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 text-xs rounded-full ${
+                                customer.paymentMethod === '카드'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-green-100 text-green-800'
+                              }`}
+                            >
                               {customer.paymentMethod}
                             </span>
                           </td>
@@ -1287,45 +1588,85 @@ const StudioManagement = () => {
           {/* 결제 방법별 요약 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">결제 방법별 요약</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                결제 방법별 요약
+              </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">카드 결제 건수:</span>
-                  <span className="font-medium">{todayCustomers.filter(c => c.paymentMethod === '카드').length}건</span>
+                  <span className="font-medium">
+                    {
+                      todayCustomers.filter((c) => c.paymentMethod === '카드')
+                        .length
+                    }
+                    건
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">현금 결제 건수:</span>
-                  <span className="font-medium">{todayCustomers.filter(c => c.paymentMethod === '현금').length}건</span>
+                  <span className="font-medium">
+                    {
+                      todayCustomers.filter((c) => c.paymentMethod === '현금')
+                        .length
+                    }
+                    건
+                  </span>
                 </div>
                 <div className="flex justify-between items-center border-t pt-3">
                   <span className="text-sm text-gray-600">총 선금 수금:</span>
                   <span className="font-medium text-green-600">
-                    {todayCustomers.reduce((sum, c) => sum + (c.deposit || 0), 0).toLocaleString()}원
+                    {todayCustomers
+                      .reduce((sum, c) => sum + c.deposit, 0)
+                      .toLocaleString()}
+                    원
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">미수금 (잔금):</span>
                   <span className="font-medium text-red-600">
-                    {todayCustomers.reduce((sum, c) => sum + ((c.totalCost || 0) - (c.deposit || 0)), 0).toLocaleString()}원
+                    {todayCustomers
+                      .reduce(
+                        (sum, c) =>
+                          sum + (c.totalCost - c.deposit),
+                        0
+                      )
+                      .toLocaleString()}
+                    원
                   </span>
                 </div>
               </div>
             </div>
 
             <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">촬영 종류별 매출</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                촬영 종류별 매출
+              </h3>
               <div className="space-y-3">
-                {photoCategories.map(category => {
-                  const categoryCustomers = todayCustomers.filter(c => c.category === category);
-                  const categoryRevenue = categoryCustomers.reduce((sum, c) => sum + (c.totalCost || 0), 0);
-                  
+                {photoCategories.map((category) => {
+                  const categoryCustomers = todayCustomers.filter(
+                    (c) => c.category === category
+                  );
+                  const categoryRevenue = categoryCustomers.reduce(
+                    (sum, c) => sum + c.totalCost,
+                    0
+                  );
+
                   if (categoryCustomers.length > 0) {
                     return (
-                      <div key={category} className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">{category}:</span>
+                      <div
+                        key={category}
+                        className="flex justify-between items-center"
+                      >
+                        <span className="text-sm text-gray-600">
+                          {category}:
+                        </span>
                         <div className="text-right">
-                          <span className="font-medium">{categoryRevenue.toLocaleString()}원</span>
-                          <span className="text-xs text-gray-500 ml-2">({categoryCustomers.length}건)</span>
+                          <span className="font-medium">
+                            {categoryRevenue.toLocaleString()}원
+                          </span>
+                          <span className="text-xs text-gray-500 ml-2">
+                            ({categoryCustomers.length}건)
+                          </span>
                         </div>
                       </div>
                     );
@@ -1343,34 +1684,50 @@ const StudioManagement = () => {
       return (
         <div className="space-y-6">
           <h2 className="text-xl font-semibold text-gray-900">오늘 일정</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white shadow rounded-lg p-6">
-              <p className="text-2xl font-bold text-blue-600">{getTodayAppointments().length}</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {getTodayAppointments().length}
+              </p>
               <p className="text-sm text-gray-500">총 예약</p>
             </div>
             <div className="bg-white shadow rounded-lg p-6">
-              <p className="text-2xl font-bold text-green-600">{getTodayAppointments().filter(apt => apt.status === '예약확정').length}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {
+                  getTodayAppointments().filter(
+                    (apt) => apt.status === '예약확정'
+                  ).length
+                }
+              </p>
               <p className="text-sm text-gray-500">확정 예약</p>
             </div>
             <div className="bg-white shadow rounded-lg p-6">
-              <p className="text-2xl font-bold text-purple-600">{getDailySales().toLocaleString()}</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {getDailySales().toLocaleString()}
+              </p>
               <p className="text-sm text-gray-500">예상 매출 (원)</p>
             </div>
           </div>
 
           <div className="bg-white shadow rounded-lg">
             <div className="px-6 py-4 bg-gray-50 border-b">
-              <h3 className="text-lg font-medium text-gray-900">시간별 스케줄</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                시간별 스케줄
+              </h3>
             </div>
             <div className="divide-y divide-gray-200">
               {getTimeSlots().map((timeSlot) => {
-                const appointment = getTodayAppointments().find(apt => apt.time === timeSlot);
+                const appointment = getTodayAppointments().find(
+                  (apt) => apt.time === timeSlot
+                );
                 return (
                   <div key={timeSlot} className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className="text-sm font-medium text-gray-900 w-16">{timeSlot}</div>
+                        <div className="text-sm font-medium text-gray-900 w-16">
+                          {timeSlot}
+                        </div>
                         {appointment ? (
                           <div>
                             <div className="text-sm font-medium text-gray-900">
@@ -1382,9 +1739,13 @@ const StudioManagement = () => {
                         )}
                       </div>
                       {appointment && (
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          appointment.status === '예약확정' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            appointment.status === '예약확정'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
                           {appointment.status}
                         </span>
                       )}
@@ -1402,7 +1763,7 @@ const StudioManagement = () => {
       return (
         <div className="space-y-6">
           <h2 className="text-xl font-semibold text-gray-900">SMS 발송</h2>
-          
+
           <div className="bg-white shadow rounded-lg p-6">
             <div className="space-y-4">
               <div>
@@ -1410,12 +1771,14 @@ const StudioManagement = () => {
                   선택된 고객 ({selectedCustomers.length}명)
                 </label>
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">메시지 내용</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  메시지 내용
+                </label>
                 <textarea
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  rows="6"
+                  rows={6}
                   placeholder="발송할 메시지를 입력하세요..."
                   value={smsMessage}
                   onChange={(e) => setSmsMessage(e.target.value)}
@@ -1444,7 +1807,9 @@ const StudioManagement = () => {
       return (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">{year}년 {month + 1}월 스케줄</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {year}년 {month + 1}월 스케줄
+            </h2>
             <div className="flex space-x-2">
               <button className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm">
                 Google Calendar 연동
@@ -1458,28 +1823,51 @@ const StudioManagement = () => {
           <div className="bg-white shadow-lg rounded-lg overflow-hidden">
             <div className="grid grid-cols-7 bg-blue-600 text-white">
               {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
-                <div key={day} className={`p-4 text-center font-bold ${
-                  index === 0 ? 'text-red-200' : index === 6 ? 'text-blue-200' : ''
-                }`}>
+                <div
+                  key={day}
+                  className={`p-4 text-center font-bold ${
+                    index === 0
+                      ? 'text-red-200'
+                      : index === 6
+                      ? 'text-blue-200'
+                      : ''
+                  }`}
+                >
                   {day}
                 </div>
               ))}
             </div>
-            
+
             <div className="grid grid-cols-7">
               {calendarDays.map((day, index) => (
                 <div
                   key={index}
                   className={`h-32 border-r border-b border-gray-200 p-2 relative ${
-                    day.isCurrentMonth ? 'bg-white hover:bg-gray-50' : 'bg-gray-100'
-                  } ${day.isToday ? 'bg-blue-100 border-2 border-blue-500' : ''}`}
+                    day.isCurrentMonth
+                      ? 'bg-white hover:bg-gray-50'
+                      : 'bg-gray-100'
+                  } ${
+                    day.isToday ? 'bg-blue-100 border-2 border-blue-500' : ''
+                  }`}
                 >
-                  <div className={`text-sm font-bold mb-1 flex justify-between ${
-                    day.isCurrentMonth ? 
-                      (index % 7 === 0 ? 'text-red-600' : index % 7 === 6 ? 'text-blue-600' : 'text-gray-900')
-                      : 'text-gray-400'
-                  }`}>
-                    <span className={day.isToday ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs' : ''}>
+                  <div
+                    className={`text-sm font-bold mb-1 flex justify-between ${
+                      day.isCurrentMonth
+                        ? index % 7 === 0
+                          ? 'text-red-600'
+                          : index % 7 === 6
+                          ? 'text-blue-600'
+                          : 'text-gray-900'
+                        : 'text-gray-400'
+                    }`}
+                  >
+                    <span
+                      className={
+                        day.isToday
+                          ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
+                          : ''
+                      }
+                    >
                       {day.date}
                     </span>
                     {day.appointments && day.appointments.length > 0 && (
@@ -1488,22 +1876,29 @@ const StudioManagement = () => {
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="space-y-1 mb-6">
-                    {day.appointments && day.appointments.slice(0, 2).map((appointment, aptIndex) => (
-                      <div 
-                        key={aptIndex} 
-                        className={`text-xs p-1 rounded ${
-                          appointment.status === '예약확정' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        <div className="font-medium">{appointment.time}</div>
-                        <div className="truncate">{appointment.customerName}</div>
-                      </div>
-                    ))}
-                    
+                    {day.appointments &&
+                      day.appointments
+                        .slice(0, 2)
+                        .map((appointment, aptIndex) => (
+                          <div
+                            key={aptIndex}
+                            className={`text-xs p-1 rounded ${
+                              appointment.status === '예약확정'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            <div className="font-medium">
+                              {appointment.time}
+                            </div>
+                            <div className="truncate">
+                              {appointment.customerName}
+                            </div>
+                          </div>
+                        ))}
+
                     {day.appointments && day.appointments.length > 2 && (
                       <div className="text-xs text-gray-500 text-center">
                         +{day.appointments.length - 2}개
@@ -1512,7 +1907,7 @@ const StudioManagement = () => {
                   </div>
 
                   {/* 예약 추가 버튼 */}
-                  <button 
+                  <button
                     onClick={() => {
                       setNewAppointment({
                         customerName: '',
@@ -1520,16 +1915,23 @@ const StudioManagement = () => {
                         isNewCustomer: false,
                         customerSearch: '',
                         showCustomerList: false,
-                        newCustomerInfo: { name: '', phone: '', email: '', category: '반명함사진' },
+                        newCustomerInfo: {
+                          name: '',
+                          phone: '',
+                          email: '',
+                          category: '반명함사진',
+                        },
                         date: day.fullDate,
-                        time: '', service: '', notes: ''
+                        time: '',
+                        service: '',
+                        notes: '',
                       });
                       setShowAppointmentForm(true);
                     }}
                     className="absolute bottom-1 right-1 w-7 h-7 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg transition-all hover:scale-110"
                     title={`${day.date}일 예약 추가`}
                   >
-                    +
+                    <Plus className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -1540,18 +1942,27 @@ const StudioManagement = () => {
           {showAppointmentForm && (
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-screen overflow-y-auto">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">새 예약 등록</h3>
-                
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  새 예약 등록
+                </h3>
+
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">고객 정보</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      고객 정보
+                    </label>
                     <div className="space-y-2">
                       <label className="flex items-center">
                         <input
                           type="radio"
                           name="customerType"
                           checked={!newAppointment.isNewCustomer}
-                          onChange={() => setNewAppointment({...newAppointment, isNewCustomer: false})}
+                          onChange={() =>
+                            setNewAppointment({
+                              ...newAppointment,
+                              isNewCustomer: false,
+                            })
+                          }
                           className="mr-2"
                         />
                         기존 고객
@@ -1561,7 +1972,12 @@ const StudioManagement = () => {
                           type="radio"
                           name="customerType"
                           checked={newAppointment.isNewCustomer}
-                          onChange={() => setNewAppointment({...newAppointment, isNewCustomer: true})}
+                          onChange={() =>
+                            setNewAppointment({
+                              ...newAppointment,
+                              isNewCustomer: true,
+                            })
+                          }
                           className="mr-2"
                         />
                         신규 고객
@@ -1571,7 +1987,9 @@ const StudioManagement = () => {
 
                   {!newAppointment.isNewCustomer && (
                     <div className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">기존 고객 검색</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        기존 고객 검색
+                      </label>
                       <div className="relative">
                         <input
                           type="text"
@@ -1580,124 +1998,169 @@ const StudioManagement = () => {
                           value={newAppointment.customerSearch}
                           onChange={(e) => {
                             setNewAppointment({
-                              ...newAppointment, 
+                              ...newAppointment,
                               customerSearch: e.target.value,
-                              showCustomerList: e.target.value.length > 0
+                              showCustomerList: e.target.value.length > 0,
                             });
                           }}
                           onFocus={() => {
                             if (newAppointment.customerSearch.length > 0) {
-                              setNewAppointment({...newAppointment, showCustomerList: true});
+                              setNewAppointment({
+                                ...newAppointment,
+                                showCustomerList: true,
+                              });
                             }
                           }}
                         />
                         <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
                       </div>
-                      
+
                       {/* 검색 결과 리스트 */}
-                      {newAppointment.showCustomerList && newAppointment.customerSearch && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                          {customers
-                            .filter(customer => 
-                              customer.name.toLowerCase().includes(newAppointment.customerSearch.toLowerCase()) ||
-                              customer.phone.includes(newAppointment.customerSearch)
-                            )
-                            .map((customer) => (
-                              <div
-                                key={customer.id}
-                                className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      {newAppointment.showCustomerList &&
+                        newAppointment.customerSearch && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {customers
+                              .filter(
+                                (customer) =>
+                                  customer.name
+                                    .toLowerCase()
+                                    .includes(
+                                      newAppointment.customerSearch.toLowerCase()
+                                    ) ||
+                                  customer.phone.includes(
+                                    newAppointment.customerSearch
+                                  )
+                              )
+                              .map((customer) => (
+                                <div
+                                  key={customer.id}
+                                  className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                  onClick={() => {
+                                    setNewAppointment({
+                                      ...newAppointment,
+                                      customerName: customer.name,
+                                      customerPhone: customer.phone,
+                                      customerSearch: customer.name,
+                                      showCustomerList: false,
+                                    });
+                                  }}
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <div>
+                                      <div className="font-medium text-gray-900">
+                                        {customer.name}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {customer.phone}
+                                      </div>
+                                      <div className="text-xs text-gray-400">
+                                        주 촬영: {customer.category}
+                                      </div>
+                                    </div>
+                                    <div className="text-right text-xs text-gray-500">
+                                      <div>최근방문</div>
+                                      <div className="font-medium">
+                                        {customer.lastVisit}
+                                      </div>
+                                      <div>{customer.totalVisits}회 방문</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            {customers.filter(
+                              (customer) =>
+                                customer.name
+                                  .toLowerCase()
+                                  .includes(
+                                    newAppointment.customerSearch.toLowerCase()
+                                  ) ||
+                                customer.phone.includes(
+                                  newAppointment.customerSearch
+                                )
+                            ).length === 0 && (
+                              <div className="p-3 text-gray-500 text-center">
+                                검색 결과가 없습니다.
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                      {/* 선택된 고객 정보 표시 */}
+                      {newAppointment.customerName &&
+                        !newAppointment.showCustomerList && (
+                          <div className="mt-2 p-3 bg-blue-50 rounded-md">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium text-blue-900">
+                                  선택된 고객: {newAppointment.customerName}
+                                </div>
+                                <div className="text-sm text-blue-700">
+                                  {newAppointment.customerPhone}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
                                 onClick={() => {
                                   setNewAppointment({
                                     ...newAppointment,
-                                    customerName: customer.name,
-                                    customerPhone: customer.phone,
-                                    customerSearch: customer.name,
-                                    showCustomerList: false
+                                    customerName: '',
+                                    customerPhone: '',
+                                    customerSearch: '',
                                   });
                                 }}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
                               >
-                                <div className="flex justify-between items-center">
-                                  <div>
-                                    <div className="font-medium text-gray-900">{customer.name}</div>
-                                    <div className="text-sm text-gray-500">{customer.phone}</div>
-                                    <div className="text-xs text-gray-400">주 촬영: {customer.category}</div>
-                                  </div>
-                                  <div className="text-right text-xs text-gray-500">
-                                    <div>최근방문</div>
-                                    <div className="font-medium">{customer.lastVisit}</div>
-                                    <div>{customer.totalVisits}회 방문</div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          }
-                          {customers
-                            .filter(customer => 
-                              customer.name.toLowerCase().includes(newAppointment.customerSearch.toLowerCase()) ||
-                              customer.phone.includes(newAppointment.customerSearch)
-                            ).length === 0 && (
-                            <div className="p-3 text-gray-500 text-center">
-                              검색 결과가 없습니다.
+                                변경
+                              </button>
                             </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* 선택된 고객 정보 표시 */}
-                      {newAppointment.customerName && !newAppointment.showCustomerList && (
-                        <div className="mt-2 p-3 bg-blue-50 rounded-md">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <div className="font-medium text-blue-900">선택된 고객: {newAppointment.customerName}</div>
-                              <div className="text-sm text-blue-700">{newAppointment.customerPhone}</div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setNewAppointment({
-                                  ...newAppointment,
-                                  customerName: '',
-                                  customerPhone: '',
-                                  customerSearch: ''
-                                });
-                              }}
-                              className="text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                              변경
-                            </button>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   )}
 
                   {newAppointment.isNewCustomer && (
                     <div className="space-y-3 p-3 bg-gray-50 rounded-md">
-                      <h4 className="text-sm font-medium text-gray-700">신규 고객 정보</h4>
+                      <h4 className="text-sm font-medium text-gray-700">
+                        신규 고객 정보
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600">고객명 *</label>
+                          <label className="block text-xs font-medium text-gray-600">
+                            고객명 *
+                          </label>
                           <input
                             type="text"
                             className="mt-1 block w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
                             value={newAppointment.newCustomerInfo.name}
-                            onChange={(e) => setNewAppointment({
-                              ...newAppointment, 
-                              newCustomerInfo: {...newAppointment.newCustomerInfo, name: e.target.value}
-                            })}
+                            onChange={(e) =>
+                              setNewAppointment({
+                                ...newAppointment,
+                                newCustomerInfo: {
+                                  ...newAppointment.newCustomerInfo,
+                                  name: e.target.value,
+                                },
+                              })
+                            }
                             placeholder="이름을 입력하세요"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600">연락처 *</label>
+                          <label className="block text-xs font-medium text-gray-600">
+                            연락처 *
+                          </label>
                           <input
                             type="tel"
                             className="mt-1 block w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
                             value={newAppointment.newCustomerInfo.phone}
-                            onChange={(e) => setNewAppointment({
-                              ...newAppointment, 
-                              newCustomerInfo: {...newAppointment.newCustomerInfo, phone: e.target.value}
-                            })}
+                            onChange={(e) =>
+                              setNewAppointment({
+                                ...newAppointment,
+                                newCustomerInfo: {
+                                  ...newAppointment.newCustomerInfo,
+                                  phone: e.target.value,
+                                },
+                              })
+                            }
                             placeholder="010-0000-0000"
                           />
                         </div>
@@ -1707,50 +2170,82 @@ const StudioManagement = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">예약 날짜 *</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        예약 날짜 *
+                      </label>
                       <input
                         type="date"
                         className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                         value={newAppointment.date}
-                        onChange={(e) => setNewAppointment({...newAppointment, date: e.target.value})}
+                        onChange={(e) =>
+                          setNewAppointment({
+                            ...newAppointment,
+                            date: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">예약 시간 *</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        예약 시간 *
+                      </label>
                       <select
                         className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                         value={newAppointment.time}
-                        onChange={(e) => setNewAppointment({...newAppointment, time: e.target.value})}
+                        onChange={(e) =>
+                          setNewAppointment({
+                            ...newAppointment,
+                            time: e.target.value,
+                          })
+                        }
                       >
                         <option value="">시간 선택</option>
                         {getTimeSlots().map((time) => (
-                          <option key={time} value={time}>{time}</option>
+                          <option key={time} value={time}>
+                            {time}
+                          </option>
                         ))}
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">촬영 종류 *</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      촬영 종류 *
+                    </label>
                     <select
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                       value={newAppointment.service}
-                      onChange={(e) => setNewAppointment({...newAppointment, service: e.target.value})}
+                      onChange={(e) =>
+                        setNewAppointment({
+                          ...newAppointment,
+                          service: e.target.value,
+                        })
+                      }
                     >
                       <option value="">촬영 종류 선택</option>
                       {photoCategories.map((category) => (
-                        <option key={category} value={category}>{category}</option>
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">특별 요청사항</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      특별 요청사항
+                    </label>
                     <textarea
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                      rows="3"
+                      rows={3}
                       value={newAppointment.notes}
-                      onChange={(e) => setNewAppointment({...newAppointment, notes: e.target.value})}
+                      onChange={(e) =>
+                        setNewAppointment({
+                          ...newAppointment,
+                          notes: e.target.value,
+                        })
+                      }
                       placeholder="특별히 요청하실 사항이 있으시면 적어주세요..."
                     />
                   </div>
@@ -1761,10 +2256,21 @@ const StudioManagement = () => {
                     onClick={() => {
                       setShowAppointmentForm(false);
                       setNewAppointment({
-                        customerName: '', customerPhone: '', isNewCustomer: false,
-                        customerSearch: '', showCustomerList: false,
-                        newCustomerInfo: { name: '', phone: '', email: '', category: '반명함사진' },
-                        date: '', time: '', service: '', notes: ''
+                        customerName: '',
+                        customerPhone: '',
+                        isNewCustomer: false,
+                        customerSearch: '',
+                        showCustomerList: false,
+                        newCustomerInfo: {
+                          name: '',
+                          phone: '',
+                          email: '',
+                          category: '반명함사진',
+                        },
+                        date: '',
+                        time: '',
+                        service: '',
+                        notes: '',
                       });
                     }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
@@ -1805,7 +2311,9 @@ const StudioManagement = () => {
 
     return (
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">개발 중입니다</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          개발 중입니다
+        </h2>
         <p className="text-gray-600">선택하신 메뉴는 개발 중입니다.</p>
       </div>
     );
@@ -1815,7 +2323,7 @@ const StudioManagement = () => {
   useEffect(() => {
     // 테스트용 기본 계정 추가
     if (!memoryStorage['studioUsers']) {
-      const defaultUser = {
+      const defaultUser: User = {
         id: 'default',
         username: 'test',
         password: '123456',
@@ -1823,7 +2331,7 @@ const StudioManagement = () => {
         phone: '010-1234-5678',
         studioName: '테스트 사진관',
         createdAt: new Date().toISOString(),
-        profile_image: '👤'
+        profile_image: '👤',
       };
       saveToStorage('studioUsers', [defaultUser]);
     }
@@ -1853,13 +2361,15 @@ const StudioManagement = () => {
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeMenu === item.id;
-              
+
               return (
                 <li key={item.id}>
                   <button
                     onClick={() => setActiveMenu(item.id)}
                     className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                      isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700'
                     }`}
                   >
                     <Icon className="h-4 w-4 mr-3" />
@@ -1876,7 +2386,9 @@ const StudioManagement = () => {
             <span className="text-lg">{userInfo?.profile_image || '👤'}</span>
             <div>
               <div className="text-sm font-medium">{userInfo?.username}</div>
-              <div className="text-xs text-gray-400">{userInfo?.studioName}</div>
+              <div className="text-xs text-gray-400">
+                {userInfo?.studioName}
+              </div>
             </div>
           </div>
           <div className="text-xs text-gray-400">
@@ -1887,7 +2399,9 @@ const StudioManagement = () => {
             onClick={() => {
               setIsLoggedIn(false);
               setUserInfo(null);
-              Object.keys(memoryStorage).forEach(key => delete memoryStorage[key]);
+              Object.keys(memoryStorage).forEach(
+                (key) => delete memoryStorage[key]
+              );
             }}
             className="mt-2 w-full text-xs bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded"
           >
@@ -1900,30 +2414,34 @@ const StudioManagement = () => {
         <header className="bg-white shadow-sm border-b">
           <div className="px-6 py-4">
             <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {menuItems.find(m => m.id === activeMenu)?.name}
-                </h2>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="전체 검색..."
+                  className="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={() => {}}
+                />
               </div>
               <div className="flex items-center space-x-4">
-                <div className="text-sm text-gray-500">
-                  {new Date().toLocaleDateString('ko-KR')} ({new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="text-sm text-gray-600">온라인</span>
-                </div>
+                <button
+                  onClick={() => setShowAppointmentForm(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center text-sm font-medium"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  새 예약
+                </button>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 overflow-y-auto bg-gray-100">
           {renderContent()}
         </main>
       </div>
     </div>
   );
-};
+}
 
-export default StudioManagement;
+export default App;
