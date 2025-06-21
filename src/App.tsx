@@ -103,6 +103,13 @@ interface ProductInfo {
   note: string;
 }
 
+// 상품 입력 행 상태
+const [newProductRows, setNewProductRows] = useState<ProductInfo[]>([]);
+// 상품 목록 상태
+const [productInfos, setProductInfos] = useState<ProductInfo[]>(
+  () => loadFromStorage('studioProductInfos') || []
+);
+
 // --- 브라우저 스토리지 헬퍼 함수 ---
 const saveToStorage = (key: string, data: any) => {
   try {
@@ -645,33 +652,6 @@ function App() {
     return todayCustomers.reduce((sum, c) => sum + (c.totalCost || 0), 0);
   };
 
-  const getMonthlyData = () => {
-    const currentYear = new Date().getFullYear();
-    const monthlyData: MonthlyData[] = [];
-
-    for (let month = 0; month < 12; month++) {
-      const monthCustomers = customers.filter((c: Customer) => {
-        const visitDate = new Date(c.lastVisit);
-        return (
-          visitDate.getFullYear() === currentYear &&
-          visitDate.getMonth() === month
-        );
-      });
-
-      monthlyData.push({
-        month: month + 1,
-        customers: monthCustomers.length,
-        revenue: monthCustomers.reduce((sum, c) => sum + (c.totalCost || 0), 0),
-        cardPayments: monthCustomers.filter((c) => c.paymentMethod === '카드')
-          .length,
-        cashPayments: monthCustomers.filter((c) => c.paymentMethod === '현금')
-          .length,
-      });
-    }
-
-    return monthlyData;
-  };
-
   const getTodayAppointments = () => {
     const today = new Date().toISOString().split('T')[0];
     return appointments.filter((apt) => apt.date === today);
@@ -1117,7 +1097,7 @@ function App() {
     .sort((a, b) => b.lastVisit.localeCompare(a.lastVisit))
     .slice(0, 10);
 
-  // 상품가격정보 페이지
+  // 상품가격정보 페이지 (map 파라미터 타입 명시)
   const renderProductInfo = () => (
     <div className="bg-white shadow rounded-lg p-6 max-w-2xl mx-auto">
       <div className="flex justify-between items-center mb-4">
@@ -1135,7 +1115,7 @@ function App() {
         </button>
       </div>
       {/* 신규 상품 입력 행 */}
-      {newProductRows.map((row, idx) => (
+      {newProductRows.map((row: ProductInfo, idx: number) => (
         <div key={row.id} className="flex gap-2 mb-2 items-center">
           <input
             type="text"
@@ -1178,7 +1158,7 @@ function App() {
                 ...productInfos,
                 { ...row, id: Date.now() },
               ]);
-              setNewProductRows(newProductRows.filter((_, i) => i !== idx));
+              setNewProductRows(newProductRows.filter((_, i: number) => i !== idx));
             }}
           >
             저장
@@ -1200,7 +1180,7 @@ function App() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {productInfos.map((p) => (
+              {productInfos.map((p: ProductInfo) => (
                 <tr key={p.id}>
                   <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{p.name}</td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{Number(p.price).toLocaleString()}원</td>
@@ -2664,6 +2644,11 @@ function App() {
   useEffect(() => {
     saveToStorage('studioAppointments', appointments);
   }, [appointments]);
+
+  // 상품 정보 저장
+  useEffect(() => {
+    saveToStorage('studioProductInfos', productInfos);
+  }, [productInfos]);
 
   // 로그인 상태가 아니면 로그인 페이지 표시
   if (!isLoggedIn) {
