@@ -24,6 +24,7 @@ interface Customer {
   deposit: number;
   paymentMethod: string;
   depositMethod: string;
+  category: string;
 }
 
 interface Appointment {
@@ -56,6 +57,7 @@ interface NewCustomer {
   deposit: string;
   paymentMethod: string;
   depositMethod: string;
+  category: string;
 }
 
 interface NewAppointment {
@@ -183,6 +185,7 @@ function App() {
       deposit: 50000,
       paymentMethod: '카드',
       depositMethod: '현금',
+      category: '프로필',
     },
     {
       id: 2,
@@ -196,6 +199,7 @@ function App() {
       deposit: 100000,
       paymentMethod: '현금',
       depositMethod: '카드',
+      category: '가족',
     },
   ];
 
@@ -236,6 +240,7 @@ function App() {
     deposit: '',
     paymentMethod: '카드',
     depositMethod: '카드',
+    category: '프로필',
   });
 
   const [newAppointment, setNewAppointment] = useState<NewAppointment>({
@@ -254,18 +259,6 @@ function App() {
     service: '',
     notes: '',
   });
-
-  const photoCategories = [
-    '반명함사진',
-    '여권사진',
-    '비자사진',
-    '민증사진',
-    '운전면허사진',
-    '프로필사진',
-    '가족사진',
-    '필름현상',
-    '단체사진',
-  ];
 
   const menuItems = [
     {
@@ -538,19 +531,13 @@ function App() {
     const validNames = customerNames.map(n => n.trim()).filter(Boolean);
     if (validNames.length === 0 || newCustomer.phone === '') return;
     const newCustomers: Customer[] = validNames.map(name => {
-      // shootingTypeId로 촬영종류명 찾기 (첫번째 상품 기준)
-      let category = '';
-      if (selectedProducts.length > 0 && selectedProducts[0].shootingTypeId) {
-        const found = shootingInfos.find(s => s.id.toString() === selectedProducts[0].shootingTypeId);
-        category = found ? found.name : '';
-      }
       return {
         id: Date.now() + Math.random(),
         name,
         phone: newCustomer.phone,
         email: newCustomer.email,
         notes: newCustomer.notes,
-        category,
+        category: newCustomer.category,
         paymentMethod: newCustomer.paymentMethod,
         depositMethod: newCustomer.depositMethod,
         totalCost: totalSelectedProductPrice,
@@ -569,6 +556,7 @@ function App() {
       deposit: '',
       paymentMethod: '카드',
       depositMethod: '카드',
+      category: '프로필',
     });
     setCustomerNames(['']);
     setSelectedProducts([]);
@@ -595,6 +583,7 @@ function App() {
           deposit: 0,
           paymentMethod: '카드',
           depositMethod: '카드',
+          category: '프로필',
           lastVisit: newAppointment.date,
           totalVisits: 1,
         };
@@ -1967,6 +1956,7 @@ function App() {
                   deposit: '',
                   paymentMethod: '카드',
                   depositMethod: '카드',
+                  category: '프로필',
                 })
               }
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
