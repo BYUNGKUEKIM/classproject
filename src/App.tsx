@@ -560,6 +560,14 @@ function App() {
     }
   };
 
+  const toggleCustomerSelection = (customerId: number) => {
+    setSelectedCustomers((prev) =>
+      prev.includes(customerId)
+        ? prev.filter((id) => id !== customerId)
+        : [...prev, customerId]
+    );
+  };
+
   const getDailySales = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayCustomers = customers.filter((c) => c.lastVisit === today);
@@ -666,25 +674,6 @@ function App() {
             {authMode === 'register' && '회원가입하여 스튜디오를 등록하세요'}
             {authMode === 'forgot' && '비밀번호를 찾아드립니다'}
           </p>
-          <div className="bg-green-100 border border-green-200 rounded-lg p-3 text-sm text-green-700 mb-8">
-            ✅ <strong>한글 입력 완전 해결!</strong>
-            <br />
-            💾 REF 방식으로 최적화
-            <br />
-            🧪 <strong>테스트 계정:</strong> test / 123456
-            <br />
-            <button
-              onClick={() =>
-                console.log(
-                  '저장된 사용자:',
-                  JSON.parse(memoryStorage['studioUsers'] || '[]')
-                )
-              }
-              className="underline text-green-700 hover:text-green-800"
-            >
-              디버그: 사용자 확인
-            </button>
-          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
@@ -1761,38 +1750,111 @@ function App() {
 
     if (activeMenu === 'sms') {
       return (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">SMS 발송</h2>
-
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  선택된 고객 ({selectedCustomers.length}명)
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  메시지 내용
-                </label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  rows={6}
-                  placeholder="발송할 메시지를 입력하세요..."
-                  value={smsMessage}
-                  onChange={(e) => setSmsMessage(e.target.value)}
-                />
-              </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 고객 목록 */}
+          <div className="md:col-span-2 bg-white shadow rounded-lg">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-medium">고객 선택</h3>
               <button
-                onClick={handleSendSMS}
-                disabled={selectedCustomers.length === 0 || !smsMessage.trim()}
-                className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-300"
+                onClick={() => {
+                  if (selectedCustomers.length === customers.length) {
+                    setSelectedCustomers([]);
+                  } else {
+                    setSelectedCustomers(customers.map((c) => c.id));
+                  }
+                }}
+                className="text-sm text-blue-600 hover:underline"
               >
-                SMS 발송
+                {selectedCustomers.length === customers.length
+                  ? '전체 해제'
+                  : '전체 선택'}
               </button>
             </div>
+            <div className="max-h-[600px] overflow-y-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      선택
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      이름
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      전화번호
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      카테고리
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {customers.map((customer) => (
+                    <tr key={customer.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedCustomers.includes(customer.id)}
+                          onChange={() => toggleCustomerSelection(customer.id)}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {customer.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {customer.phone}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {customer.category}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* SMS 작성 */}
+          <div className="bg-white shadow rounded-lg p-6 space-y-4 h-fit">
+            <h3 className="text-lg font-medium">메시지 작성</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                선택된 고객 ({selectedCustomers.length}명)
+              </label>
+              <div className="w-full p-3 h-24 border rounded-md bg-gray-50 overflow-y-auto text-sm">
+                {selectedCustomers.length > 0 ? (
+                  customers
+                    .filter((c) => selectedCustomers.includes(c.id))
+                    .map((c) => c.name)
+                    .join(', ')
+                ) : (
+                  <span className="text-gray-400">고객을 선택해주세요.</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                메시지 내용
+              </label>
+              <textarea
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                rows={8}
+                placeholder="발송할 메시지를 입력하세요..."
+                value={smsMessage}
+                onChange={(e) => setSmsMessage(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {smsMessage.length} / 90 Bytes (한글 45자)
+              </p>
+            </div>
+            <button
+              onClick={handleSendSMS}
+              disabled={selectedCustomers.length === 0 || !smsMessage.trim()}
+              className="w-full bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-300"
+            >
+              SMS 발송
+            </button>
           </div>
         </div>
       );
@@ -2321,19 +2383,9 @@ function App() {
 
   // 초기 데이터 로드
   useEffect(() => {
-    // 테스트용 기본 계정 추가
+    // 사용자가 없으면 빈 배열로 초기화
     if (!memoryStorage['studioUsers']) {
-      const defaultUser: User = {
-        id: 'default',
-        username: 'test',
-        password: '123456',
-        email: 'test@test.com',
-        phone: '010-1234-5678',
-        studioName: '테스트 사진관',
-        createdAt: new Date().toISOString(),
-        profile_image: '👤',
-      };
-      saveToStorage('studioUsers', [defaultUser]);
+      saveToStorage('studioUsers', []);
     }
   }, []);
 
