@@ -2987,12 +2987,13 @@ function App() {
                 const XLSX = await import('xlsx');
                 const reader = new FileReader();
                 reader.onload = (evt) => {
+                  if (!evt.target) return;
                   const data = new Uint8Array(evt.target.result as ArrayBuffer);
                   const workbook = XLSX.read(data, { type: 'array' });
                   const sheet = workbook.Sheets[workbook.SheetNames[0]];
                   const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                   // 첫 행은 헤더, 2행부터 데이터
-                  const newCustomers = json.slice(1).map((row: any[]) => ({
+                  const newCustomers = (json.slice(1) as any[]).map((row: any[]) => ({
                     id: Number(row[0]),
                     lastVisit: row[1],
                     name: row[2],
