@@ -332,6 +332,12 @@ function App() {
       icon: Users,
       subMenus: [],
     },
+    {
+      id: 'resetData',
+      name: '데이터 초기화',
+      icon: DollarSign,
+      subMenus: [],
+    },
   ];
 
   // 인증 관련 함수들
@@ -1205,27 +1211,48 @@ function App() {
     );
   };
 
+  // 정렬 기준 상태 추가
+  const [customerSortBy, setCustomerSortBy] = useState<'name' | 'date'>('date');
+
   // 고객 리스트 페이지
   const renderCustomerList = () => {
     // 검색 및 정렬
-    const filtered = customers
-      .filter(
-        (c) =>
-          c.name.includes(customerSearchTerm) ||
-          c.phone.includes(customerSearchTerm)
-      )
-      .sort((a, b) => b.lastVisit.localeCompare(a.lastVisit));
+    let filtered = customers.filter(
+      (c) =>
+        (c.name || '').toLowerCase().replace(/\s/g, '').includes(customerSearchTerm.toLowerCase().replace(/\s/g, '')) ||
+        (c.phone || '').replace(/\s/g, '').includes(customerSearchTerm.replace(/\s/g, ''))
+    );
+    if (customerSortBy === 'name') {
+      filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      filtered = filtered.sort((a, b) => b.lastVisit.localeCompare(a.lastVisit));
+    }
     return (
       <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
           <h2 className="text-xl font-bold">고객 리스트</h2>
-          <input
-            type="text"
-            placeholder="이름/전화번호 검색"
-            className="border px-3 py-2 rounded-md text-sm"
-            value={customerSearchTerm}
-            onChange={e => setCustomerSearchTerm(e.target.value)}
-          />
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              placeholder="이름/전화번호 검색"
+              className="border px-3 py-2 rounded-md text-sm"
+              value={customerSearchTerm}
+              onChange={e => setCustomerSearchTerm(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') setCustomerSearchTerm(e.currentTarget.value); }}
+            />
+            <button
+              className="px-3 py-2 bg-blue-500 text-white rounded-md text-sm"
+              onClick={() => setCustomerSearchTerm(customerSearchTerm)}
+            >검색</button>
+            <button
+              className={`px-3 py-2 rounded-md text-sm border ${customerSortBy === 'name' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+              onClick={() => setCustomerSortBy('name')}
+            >이름순</button>
+            <button
+              className={`px-3 py-2 rounded-md text-sm border ${customerSortBy === 'date' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+              onClick={() => setCustomerSortBy('date')}
+            >날짜순</button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -1237,13 +1264,19 @@ function App() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filtered.map((customer) => (
-                <tr key={customer.id} className="hover:bg-blue-50 cursor-pointer" onClick={() => setCustomerDetail(customer)}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{customer.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.lastVisit}</td>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="text-center text-gray-500 py-8">검색 결과가 없습니다.</td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((customer) => (
+                  <tr key={customer.id} className="hover:bg-blue-50 cursor-pointer" onClick={() => setCustomerDetail(customer)}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{customer.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.phone}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.lastVisit}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -2974,7 +3007,14 @@ function App() {
     }
 
     if (activeMenu === 'customerList') {
-      return renderCustomerList();
+      return <>
+        {renderCustomerList()}
+        {showResetModal && renderResetModal()}
+      </>;
+    }
+
+    if (activeMenu === 'resetData') {
+      return renderResetModal();
     }
 
     if (activeMenu === 'productInfo') {
@@ -3004,34 +3044,37 @@ function App() {
                   const workbook = XLSX.read(data, { type: 'array' });
                   const sheet = workbook.Sheets[workbook.SheetNames[0]];
                   const json = XLSX.utils.sheet_to_json(sheet, { defval: '', header: 0 });
-                  const newCustomers = (json as any[]).map((row) => {
-                    const existing = customers.find(c => c.phone === row.phone);
-                    if (existing) {
-                      // 재방문 고객: 방문일/횟수만 갱신, 등록일은 그대로
-                      return {
-                        ...existing,
-                        lastVisit: row.lastVisit,
-                        totalVisits: (existing.totalVisits || 1) + 1,
-                      };
-                    } else {
-                      // 신규 고객
-                      return {
-                        id: Number(row.id),
-                        name: row.name,
-                        phone: row.phone,
-                        email: row.email,
-                        lastVisit: row.lastVisit,
-                        createdAt: row.lastVisit, // 등록일 = lastVisit
-                        totalVisits: Number(row.totalVisits) || 1,
-                        notes: row.notes,
-                        category: row.category,
-                        totalCost: Number(row.totalCost) || 0,
-                        deposit: Number(row.deposit) || 0,
-                        paymentMethod: row.paymentMethod || row.paymentMethd || '',
-                        depositMethod: row.depositMethod || row.depositMethd || '',
-                      };
-                    }
-                  });
+                  const newCustomers = (json as any[])
+                    .filter(row => row.name && row.name.trim() !== "")
+                    .map((row) => {
+                      const name = (row.name || '').trim();
+                      const existing = customers.find(c => c.phone === row.phone);
+                      if (existing) {
+                        // 재방문 고객: 방문일/횟수만 갱신, 등록일은 그대로
+                        return {
+                          ...existing,
+                          lastVisit: row.lastVisit,
+                          totalVisits: (existing.totalVisits || 1) + 1,
+                        };
+                      } else {
+                        // 신규 고객
+                        return {
+                          id: Number(row.id),
+                          name,
+                          phone: row.phone,
+                          email: row.email,
+                          lastVisit: row.lastVisit,
+                          createdAt: row.lastVisit, // 등록일 = lastVisit
+                          totalVisits: Number(row.totalVisits) || 1,
+                          notes: row.notes,
+                          category: row.category,
+                          totalCost: Number(row.totalCost) || 0,
+                          deposit: Number(row.deposit) || 0,
+                          paymentMethod: row.paymentMethod || row.paymentMethd || '',
+                          depositMethod: row.depositMethod || row.depositMethd || '',
+                        };
+                      }
+                    });
                   // 기존 고객 중복 제거 및 병합
                   const merged = [...customers];
                   newCustomers.forEach((nc) => {
@@ -3131,11 +3174,16 @@ function App() {
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeMenu === item.id;
-
               return (
                 <li key={item.id}>
                   <button
-                    onClick={() => setActiveMenu(item.id)}
+                    onClick={() => {
+                      if (item.id === 'resetData') {
+                        setShowResetModal(true);
+                      } else {
+                        setActiveMenu(item.id);
+                      }
+                    }}
                     className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                       isActive
                         ? 'bg-blue-600 text-white'
