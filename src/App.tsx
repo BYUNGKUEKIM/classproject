@@ -164,7 +164,7 @@ function App() {
   // 상품 입력 행 상태
   const [newProductRows, setNewProductRows] = useState<ProductInfo[]>([]);
   // 상품 목록 상태
-  const [productInfos, setProductInfos] = useState<ProductInfo[]>(
+  const [productInfos] = useState<ProductInfo[]>(
     () => loadFromStorage('studioProductInfos') || []
   );
   // 촬영정보 입력 상태
@@ -535,18 +535,18 @@ function App() {
     if (validNames.length === 0 || newCustomer.phone === '') return;
     const newCustomers: Customer[] = validNames.map(name => {
       return {
-        id: Date.now() + Math.random(),
-        name,
-        phone: newCustomer.phone,
-        email: newCustomer.email,
-        notes: newCustomer.notes,
-        category: newCustomer.category,
-        paymentMethod: newCustomer.paymentMethod,
-        depositMethod: newCustomer.depositMethod,
-        totalCost: totalSelectedProductPrice,
-        deposit: parseInt(newCustomer.deposit) || 0,
-        lastVisit: new Date().toISOString().split('T')[0],
-        totalVisits: 1,
+      id: Date.now() + Math.random(),
+      name,
+      phone: newCustomer.phone,
+      email: newCustomer.email,
+      notes: newCustomer.notes,
+      category: newCustomer.category,
+      paymentMethod: newCustomer.paymentMethod,
+      depositMethod: newCustomer.depositMethod,
+      totalCost: totalSelectedProductPrice,
+      deposit: parseInt(newCustomer.deposit) || 0,
+      lastVisit: new Date().toISOString().split('T')[0],
+      totalVisits: 1,
       };
     });
     setCustomers([...customers, ...newCustomers]);
@@ -1685,7 +1685,7 @@ function App() {
                 placeholder="email@example.com"
               />
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 촬영종류
               </label>
@@ -1702,7 +1702,7 @@ function App() {
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
             {/* 상품 검색 및 선택 - 가로 절반만 차지하도록 col-span-1로 변경 */}
             <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1886,7 +1886,7 @@ function App() {
             <div className="mt-4">
               <label className="block text-sm font-medium mb-1">촬영종류</label>
               <div className="relative">
-              </div>
+                          </div>
             </div>
           </div>
 
