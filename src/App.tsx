@@ -1043,6 +1043,18 @@ function App() {
     };
     const totalProductPrice = selectedProducts.reduce((sum, p) => sum + Number(p.price), 0);
 
+    // 고객 삭제 함수
+    const handleDeleteCustomer = () => {
+      if (window.confirm('정말로 이 고객을 삭제하시겠습니까?')) {
+        setCustomers(prev => {
+          const updated = prev.filter(c => c.id !== customer.id);
+          saveToStorage('studioCustomers', updated);
+          return updated;
+        });
+        onClose();
+      }
+    };
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
@@ -1186,7 +1198,7 @@ function App() {
           <div className="flex justify-end gap-2 mt-4">
             <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">저장</button>
             <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">인쇄</button>
-            <button className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">삭제</button>
+            <button className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onClick={handleDeleteCustomer}>삭제</button>
           </div>
         </div>
       </div>
@@ -3031,6 +3043,7 @@ function App() {
                     }
                   });
                   setCustomers(merged);
+                  saveToStorage('studioCustomers', merged);
                   alert('고객정보가 업로드되었습니다!');
                 };
                 reader.readAsArrayBuffer(file);
