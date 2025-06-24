@@ -326,6 +326,12 @@ function App() {
         { id: 'shooting', name: '촬영정보' },
       ],
     },
+    {
+      id: 'customerImportExport',
+      name: '고객정보 업로드/백업',
+      icon: Users,
+      subMenus: [],
+    },
   ];
 
   // 인증 관련 함수들
@@ -1884,7 +1890,7 @@ function App() {
             </div>
             {/* 촬영정보 선택 */}
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-1"></label>
+              <label className="block text-sm font-medium mb-1">촬영종류</label>
               <div className="relative">
                           </div>
             </div>
@@ -2965,6 +2971,64 @@ function App() {
 
     if (activeMenu === 'shootingInfo') {
       return renderShootingInfo();
+    }
+
+    if (activeMenu === 'customerImportExport') {
+      return (
+        <div className="bg-white shadow rounded-lg p-6 max-w-2xl mx-auto">
+          <h2 className="text-xl font-bold mb-4">고객정보 업로드/백업</h2>
+          <div className="mb-6">
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const XLSX = await import('xlsx');
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                  const data = new Uint8Array(evt.target.result as ArrayBuffer);
+                  const workbook = XLSX.read(data, { type: 'array' });
+                  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                  const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                  // 첫 행은 헤더, 2행부터 데이터
+                  const newCustomers = json.slice(1).map((row: any[]) => ({
+                    id: Number(row[0]),
+                    lastVisit: row[1],
+                    name: row[2],
+                    phone: row[6]?.toString() || '',
+                    email: row[15]?.toString() || '',
+                    notes: row[16]?.toString() || '',
+                    totalCost: Number(row[11]) || 0,
+                    deposit: Number(row[12]) || 0,
+                    paymentMethod: row[8]?.toString() || '',
+                    depositMethod: row[9]?.toString() || '',
+                    category: row[5]?.toString() || '',
+                    totalVisits: 1,
+                  }));
+                  setCustomers((prev) => [...prev, ...newCustomers]);
+                  alert('고객정보가 업로드되었습니다!');
+                };
+                reader.readAsArrayBuffer(file);
+              }}
+              className="mb-2"
+            />
+            <div className="text-xs text-gray-500 mb-2">엑셀(.xlsx) 파일을 업로드하세요.</div>
+          </div>
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            onClick={async () => {
+              const XLSX = await import('xlsx');
+              const ws = XLSX.utils.json_to_sheet(customers);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, '고객정보');
+              XLSX.writeFile(wb, '고객정보백업.xlsx');
+            }}
+          >
+            고객정보 백업(엑셀 다운로드)
+          </button>
+        </div>
+      );
     }
 
     return (
