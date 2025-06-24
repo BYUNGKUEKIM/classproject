@@ -2991,21 +2991,20 @@ function App() {
                   const data = new Uint8Array(evt.target.result as ArrayBuffer);
                   const workbook = XLSX.read(data, { type: 'array' });
                   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                  const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                  // 첫 행은 헤더, 2행부터 데이터
-                  const newCustomers = (json.slice(1) as any[]).map((row: any[]) => ({
-                    id: Number(row[0]),
-                    lastVisit: row[1],
-                    name: row[2],
-                    phone: row[6]?.toString() || '',
-                    email: row[15]?.toString() || '',
-                    notes: row[16]?.toString() || '',
-                    totalCost: Number(row[11]) || 0,
-                    deposit: Number(row[12]) || 0,
-                    paymentMethod: row[8]?.toString() || '',
-                    depositMethod: row[9]?.toString() || '',
-                    category: row[5]?.toString() || '',
-                    totalVisits: 1,
+                  const json = XLSX.utils.sheet_to_json(sheet, { defval: '', header: 0 });
+                  const newCustomers = (json as any[]).map((row) => ({
+                    id: Number(row.id),
+                    name: row.name,
+                    phone: row.phone,
+                    email: row.email,
+                    lastVisit: row.lastVisit,
+                    totalVisits: Number(row.totalVisits) || 1,
+                    notes: row.notes,
+                    category: row.category,
+                    totalCost: Number(row.totalCost) || 0,
+                    deposit: Number(row.deposit) || 0,
+                    paymentMethod: row.paymentMethod || row.paymentMethd || '',
+                    depositMethod: row.depositMethod || row.depositMethd || '',
                   }));
                   setCustomers((prev) => [...prev, ...newCustomers]);
                   alert('고객정보가 업로드되었습니다!');
