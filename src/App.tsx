@@ -2992,21 +2992,45 @@ function App() {
                   const workbook = XLSX.read(data, { type: 'array' });
                   const sheet = workbook.Sheets[workbook.SheetNames[0]];
                   const json = XLSX.utils.sheet_to_json(sheet, { defval: '', header: 0 });
-                  const newCustomers = (json as any[]).map((row) => ({
-                    id: Number(row.id),
-                    name: row.name,
-                    phone: row.phone,
-                    email: row.email,
-                    lastVisit: row.lastVisit,
-                    totalVisits: Number(row.totalVisits) || 1,
-                    notes: row.notes,
-                    category: row.category,
-                    totalCost: Number(row.totalCost) || 0,
-                    deposit: Number(row.deposit) || 0,
-                    paymentMethod: row.paymentMethod || row.paymentMethd || '',
-                    depositMethod: row.depositMethod || row.depositMethd || '',
-                  }));
-                  setCustomers((prev) => [...prev, ...newCustomers]);
+                  const newCustomers = (json as any[]).map((row) => {
+                    const existing = customers.find(c => c.phone === row.phone);
+                    if (existing) {
+                      // 재방문 고객: 방문일/횟수만 갱신, 등록일은 그대로
+                      return {
+                        ...existing,
+                        lastVisit: row.lastVisit,
+                        totalVisits: (existing.totalVisits || 1) + 1,
+                      };
+                    } else {
+                      // 신규 고객
+                      return {
+                        id: Number(row.id),
+                        name: row.name,
+                        phone: row.phone,
+                        email: row.email,
+                        lastVisit: row.lastVisit,
+                        createdAt: row.lastVisit, // 등록일 = lastVisit
+                        totalVisits: Number(row.totalVisits) || 1,
+                        notes: row.notes,
+                        category: row.category,
+                        totalCost: Number(row.totalCost) || 0,
+                        deposit: Number(row.deposit) || 0,
+                        paymentMethod: row.paymentMethod || row.paymentMethd || '',
+                        depositMethod: row.depositMethod || row.depositMethd || '',
+                      };
+                    }
+                  });
+                  // 기존 고객 중복 제거 및 병합
+                  const merged = [...customers];
+                  newCustomers.forEach((nc) => {
+                    const idx = merged.findIndex(c => c.phone === nc.phone);
+                    if (idx > -1) {
+                      merged[idx] = nc; // 기존 고객 정보 갱신
+                    } else {
+                      merged.push(nc); // 신규 고객 추가
+                    }
+                  });
+                  setCustomers(merged);
                   alert('고객정보가 업로드되었습니다!');
                 };
                 reader.readAsArrayBuffer(file);
