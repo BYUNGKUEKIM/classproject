@@ -1884,7 +1884,7 @@ function App() {
             </div>
             {/* 촬영정보 선택 */}
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-1">촬영종류</label>
+              <label className="block text-sm font-medium mb-1"></label>
               <div className="relative">
                           </div>
             </div>
