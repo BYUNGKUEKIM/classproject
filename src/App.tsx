@@ -263,6 +263,12 @@ function App() {
     notes: '',
   });
 
+  // 데이터 초기화 관련 상태 (최상단에 위치)
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetStep, setResetStep] = useState(0);
+  const [resetPassword, setResetPassword] = useState('');
+  const RESET_PASSWORD = 'deleteall';
+
   const menuItems = [
     {
       id: 'dashboard',
@@ -1463,6 +1469,54 @@ function App() {
       {renderProductInfo()}
     </div>
   );
+
+  // 데이터 초기화 모달 함수 (최상단에 위치)
+  function renderResetModal() {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-sm relative">
+          <button onClick={() => setShowResetModal(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl">×</button>
+          <h2 className="text-xl font-bold mb-4 text-red-600">데이터 초기화</h2>
+          <p className="mb-4 text-gray-700">이 작업은 <b>모든 고객, 예약, 상품 정보</b>를 완전히 삭제합니다.<br/>복구할 수 없습니다.</p>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">비밀번호를 입력하세요</label>
+            <input
+              type="password"
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              value={resetPassword}
+              onChange={e => setResetPassword(e.target.value)}
+              placeholder="비밀번호 ('deleteall')"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              className={`flex-1 px-4 py-2 rounded ${resetStep === 0 ? 'bg-red-500 text-white' : 'bg-gray-300 text-gray-600'}`}
+              disabled={resetStep !== 0 || resetPassword !== RESET_PASSWORD}
+              onClick={() => setResetStep(1)}
+            >1차 확인</button>
+            <button
+              className={`flex-1 px-4 py-2 rounded ${resetStep === 1 ? 'bg-red-700 text-white' : 'bg-gray-300 text-gray-600'}`}
+              disabled={resetStep !== 1}
+              onClick={() => {
+                setCustomers([]);
+                setAppointments([]);
+                setProductInfos([]);
+                setShootingInfos([]);
+                saveToStorage('studioCustomers', []);
+                saveToStorage('studioAppointments', []);
+                saveToStorage('studioProductInfos', []);
+                saveToStorage('studioShootingInfos', []);
+                setShowResetModal(false);
+                setResetStep(0);
+                setResetPassword('');
+                alert('모든 데이터가 삭제되었습니다!');
+              }}
+            >2차 최종 삭제</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 메인 콘텐츠 렌더링 함수
   const renderContent = () => {
