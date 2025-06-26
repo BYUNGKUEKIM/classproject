@@ -1500,8 +1500,6 @@ function App() {
               onClick={() => {
                 setCustomers([]);
                 setAppointments([]);
-                setProductInfos([]);
-                setShootingInfos([]);
                 saveToStorage('studioCustomers', []);
                 saveToStorage('studioAppointments', []);
                 saveToStorage('studioProductInfos', []);
